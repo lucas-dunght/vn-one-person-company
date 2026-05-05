@@ -1,0 +1,25 @@
+---
+type: brain
+section: strategy
+last_updated: 2026-05-06
+---
+# Chiến lược DN
+
+## Tầm nhìn
+[Điền: tầm nhìn 3-5 năm]
+
+## Sứ mệnh
+[Điền: sứ mệnh DN]
+
+## Khách hàng mục tiêu (ICP)
+- Phân khúc: [vd: SME 5-50 nhân viên]
+- Đặc điểm: [tuổi, thu nhập, hành vi]
+- Pain point: [3 vấn đề chính]
+
+## Mục tiêu năm
+- Doanh thu:
+- Số khách:
+- Mở rộng:
+
+## Định vị thương hiệu
+[Một câu định vị]
