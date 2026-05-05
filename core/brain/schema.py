@@ -1,8 +1,10 @@
 """Pydantic schemas cho Brain layer (00-Brain/*.md)."""
 from __future__ import annotations
 from datetime import date
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import BaseModel, Field
+
+BusinessStage = Literal["pre-seed", "seed", "growth", "mature", "pivot", "unknown"]
 
 
 class Strategy(BaseModel):
@@ -17,7 +19,7 @@ class Strategy(BaseModel):
 class Product(BaseModel):
     code: str
     name: str
-    price_vnd: int
+    price_vnd: int = Field(gt=0, description="Giá tính bằng VND")
     margin_pct: float = Field(ge=0, le=100)
     status: str = "active"
     features: list[str] = Field(default_factory=list)
@@ -25,8 +27,8 @@ class Product(BaseModel):
 
 class BudgetLine(BaseModel):
     department: str
-    allocated_vnd: int
-    spent_vnd: int = 0
+    allocated_vnd: int = Field(ge=0)
+    spent_vnd: int = Field(ge=0, default=0)
 
     @property
     def remaining_vnd(self) -> int:
@@ -63,12 +65,12 @@ class DecisionEntry(BaseModel):
 
 
 class BrainContext(BaseModel):
-    """Assembled view of toan bo 00-Brain/ — passed vao moi agent."""
+    """Assembled view của toàn bộ 00-Brain/ — truyền vào mọi agent."""
     strategy: Strategy
     products: list[Product]
     budget: Budget
     headcount: Headcount
     laws: list[LawReference]
     decisions: list[DecisionEntry]
-    state: str
+    state: BusinessStage
     glossary: dict[str, str]

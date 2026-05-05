@@ -28,3 +28,8 @@ def test_brain_context_assembly():
 def test_invalid_margin_rejected():
     with pytest.raises(ValueError):
         Product(code="A", name="X", price_vnd=1000, margin_pct=150)
+
+def test_budget_line_remaining():
+    from core.brain.schema import BudgetLine
+    line = BudgetLine(department="07-marketing", allocated_vnd=10_000_000, spent_vnd=3_000_000)
+    assert line.remaining_vnd == 7_000_000
