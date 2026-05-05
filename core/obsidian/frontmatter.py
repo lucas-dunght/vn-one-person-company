@@ -12,4 +12,7 @@ def parse(content: str) -> tuple[dict, str]:
     if not m:
         return {}, content
     fm_yaml, body = m.groups()
-    return yaml.safe_load(fm_yaml) or {}, body
+    try:
+        return yaml.safe_load(fm_yaml) or {}, body
+    except yaml.YAMLError as e:
+        raise ValueError(f"Malformed YAML frontmatter: {e}") from e

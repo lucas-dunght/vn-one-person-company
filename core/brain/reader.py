@@ -8,17 +8,16 @@ from core.brain.schema import (
     LawReference, DecisionEntry, BrainContext,
 )
 
-# Maps raw state strings from markdown to valid BusinessStage literals
-_STAGE_MAP: dict[str, str] = {
-    "pre-seed": "pre-seed",
-    "seed": "seed",
-    "growth": "growth",
-    "mature": "mature",
-    "pivot": "pivot",
-}
-
-
 class BrainReader:
+    # Maps raw state strings from markdown to valid BusinessStage literals
+    _STAGE_MAP: dict[str, str] = {
+        "pre-seed": "pre-seed",
+        "seed": "seed",
+        "growth": "growth",
+        "mature": "mature",
+        "pivot": "pivot",
+    }
+
     def __init__(self, vault_root: Path):
         self.vault = Path(vault_root)
         self.brain_dir = self.vault / "00-Brain"
@@ -63,7 +62,7 @@ class BrainReader:
         _, body = self._read_file("products.md")
         # Parse markdown table rows: | CODE | Name | price | margin | status |
         rows = re.findall(
-            r"\|\s*([A-Z]+)\s*\|\s*([^|]+?)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\w+)\s*\|",
+            r"\|\s*([A-Z][A-Z0-9]*)\s*\|\s*([^|]+?)\s*\|\s*(\d+)\s*\|\s*(\d+(?:\.\d+)?)\s*\|\s*(\w+)\s*\|",
             body,
         )
         return [
@@ -79,8 +78,8 @@ class BrainReader:
 
     def _read_budget(self) -> Budget:
         _, body = self._read_file("budget.md")
-        total_match = re.search(r"Tổng ngân sách:\s*([\d_,]+)", body)
-        total = int(re.sub(r"[_,]", "", total_match.group(1))) if total_match else 0
+        total_match = re.search(r"Tổng ngân sách:\s*([\d_,.]+)", body)
+        total = int(re.sub(r"[_,.]", "", total_match.group(1))) if total_match else 0
         return Budget(total_year_vnd=total)
 
     def _read_headcount(self) -> Headcount:
@@ -98,9 +97,12 @@ class BrainReader:
 
     def _read_state(self) -> str:
         _, body = self._read_file("state.md")
-        m = re.search(r"\[(\w[\w\s/-]*)\]", body)
-        raw = m.group(1).strip().lower() if m else "unknown"
-        return _STAGE_MAP.get(raw, "unknown")
+        section = self._extract_section(body, "Giai đoạn")
+        if not section:
+            return "unknown"
+        m = re.search(r"\[(\w[\w\s/-]+)\]", section)
+        raw = m.group(1) if m else "unknown"
+        return self._STAGE_MAP.get(raw.lower().strip(), "unknown")
 
     def _read_glossary(self) -> dict[str, str]:
         _, body = self._read_file("glossary.md")
