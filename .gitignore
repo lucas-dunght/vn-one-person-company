@@ -17,3 +17,6 @@ build/
 .ruff_cache/
 *.log
 Thumbs.db
+
+# External references (read-only, not vendored)
+references/tradingagents/
