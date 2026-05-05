@@ -24,6 +24,6 @@ SOFTWARE.
 
 NOTICE
 
-- 191 templates in `templates-vn/` adapted from business-builder.plugin
+- 192 templates in `templates-vn/` adapted from business-builder.plugin
 - Engine debate pattern adapted from TradingAgents (https://github.com/TauricResearch/TradingAgents)
 - Role definitions reference from agency-agents (https://github.com/msitarzewski/agency-agents)

@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
-# Extract bb-plugin và copy 191 template vào templates-vn/
+# Extract bb-plugin và copy 192 template vào templates-vn/
 set -euo pipefail
+
+if [[ "${BASH_VERSINFO[0]}" -lt 4 ]]; then
+  echo "❌ Requires bash >= 4 (on macOS: brew install bash)"
+  exit 1
+fi
 
 PLUGIN_PATH="${1:-references/business-builder.plugin}"
 TARGET="templates-vn"
@@ -11,6 +16,7 @@ if [ ! -f "$PLUGIN_PATH" ]; then
 fi
 
 TMP=$(mktemp -d)
+trap 'rm -rf "$TMP"' EXIT
 unzip -q "$PLUGIN_PATH" -d "$TMP"
 
 mkdir -p "$TARGET"
@@ -37,9 +43,8 @@ for src in "${!MAP[@]}"; do
   mkdir -p "$TARGET/$dst"
   if [ -d "$TMP/skills/$src/references" ]; then
     cp -r "$TMP/skills/$src/references/"* "$TARGET/$dst/"
-    echo "✓ $src → $dst ($(ls "$TARGET/$dst" | wc -l) files)"
+    echo "✓ $src → $dst ($(find "$TARGET/$dst" -maxdepth 1 -name '*.md' | wc -l) files)"
   fi
 done
 
-rm -rf "$TMP"
 echo "✅ Vendored to $TARGET/"
