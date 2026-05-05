@@ -44,6 +44,6 @@ class DepartmentLoader:
     def load_all(self) -> list[Department]:
         out = []
         for child in sorted(self.root.iterdir()):
-            if child.is_dir() and child.name.startswith(("0", "1")) and (child / "department.yaml").exists():
+            if child.is_dir() and not child.name.startswith("_") and (child / "department.yaml").exists():
                 out.append(self.load(child.name))
         return out
