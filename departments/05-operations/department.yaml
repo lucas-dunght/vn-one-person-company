@@ -1,0 +1,10 @@
+code: "05-operations"
+name_vn: "Hành chính & Vận hành"
+tier: 2
+description: "Phòng Hành chính & Vận hành."
+agents: []
+default_speaker: ""
+refs_folder: refs/
+depends_on: []
+debate_role:
+  default: pro

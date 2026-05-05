@@ -1,0 +1,10 @@
+code: "06-sales"
+name_vn: "Kinh doanh & Bán hàng"
+tier: 3
+description: "Phòng Kinh doanh & Bán hàng."
+agents: []
+default_speaker: ""
+refs_folder: refs/
+depends_on: []
+debate_role:
+  default: pro

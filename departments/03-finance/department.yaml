@@ -1,0 +1,10 @@
+code: "03-finance"
+name_vn: "Tài chính & Kế toán"
+tier: 2
+description: "Phòng Tài chính & Kế toán."
+agents: []
+default_speaker: ""
+refs_folder: refs/
+depends_on: []
+debate_role:
+  default: pro

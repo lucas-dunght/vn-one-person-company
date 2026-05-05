@@ -1,0 +1,10 @@
+code: "10-training"
+name_vn: "Đào tạo & Phát triển"
+tier: 4
+description: "Phòng Đào tạo & Phát triển."
+agents: []
+default_speaker: ""
+refs_folder: refs/
+depends_on: []
+debate_role:
+  default: pro

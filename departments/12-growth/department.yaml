@@ -1,0 +1,10 @@
+code: "12-growth"
+name_vn: "Tăng trưởng & Đầu tư"
+tier: 5
+description: "Phòng Tăng trưởng & Đầu tư."
+agents: []
+default_speaker: ""
+refs_folder: refs/
+depends_on: []
+debate_role:
+  default: pro

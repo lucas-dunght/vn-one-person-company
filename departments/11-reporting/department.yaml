@@ -1,0 +1,10 @@
+code: "11-reporting"
+name_vn: "Báo cáo & Đo lường"
+tier: 4
+description: "Phòng Báo cáo & Đo lường."
+agents: []
+default_speaker: ""
+refs_folder: refs/
+depends_on: []
+debate_role:
+  default: pro

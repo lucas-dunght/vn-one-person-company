@@ -1,0 +1,10 @@
+code: "01-governance"
+name_vn: "Quản trị & Pháp lý"
+tier: 1
+description: "Phòng Quản trị & Pháp lý."
+agents: []
+default_speaker: ""
+refs_folder: refs/
+depends_on: []
+debate_role:
+  default: pro

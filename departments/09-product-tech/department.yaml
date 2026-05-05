@@ -1,0 +1,10 @@
+code: "09-product-tech"
+name_vn: "Sản phẩm & Công nghệ"
+tier: 4
+description: "Phòng Sản phẩm & Công nghệ."
+agents: []
+default_speaker: ""
+refs_folder: refs/
+depends_on: []
+debate_role:
+  default: pro

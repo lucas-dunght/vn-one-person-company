@@ -1,0 +1,10 @@
+code: "04-people"
+name_vn: "Nhân sự & Con người"
+tier: 2
+description: "Phòng Nhân sự & Con người."
+agents: []
+default_speaker: ""
+refs_folder: refs/
+depends_on: []
+debate_role:
+  default: pro

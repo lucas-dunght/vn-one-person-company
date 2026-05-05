@@ -1,0 +1,10 @@
+code: "02-strategy"
+name_vn: "Chiến lược & Kế hoạch"
+tier: 1
+description: "Phòng Chiến lược & Kế hoạch."
+agents: []
+default_speaker: ""
+refs_folder: refs/
+depends_on: []
+debate_role:
+  default: pro
