@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+*.db
+*.docx
+*.xlsx
+!templates-vn/**/*.docx
+!templates-vn/**/*.xlsx
+.vncoderc
+checkpoints/
