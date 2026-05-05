@@ -1,0 +1,15 @@
+"""Parse YAML frontmatter trong Obsidian markdown."""
+from __future__ import annotations
+import re
+import yaml
+
+FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n(.*)", re.DOTALL)
+
+
+def parse(content: str) -> tuple[dict, str]:
+    """Return (frontmatter_dict, body_str)."""
+    m = FRONTMATTER_RE.match(content)
+    if not m:
+        return {}, content
+    fm_yaml, body = m.groups()
+    return yaml.safe_load(fm_yaml) or {}, body
