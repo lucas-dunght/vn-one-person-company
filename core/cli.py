@@ -137,5 +137,36 @@ def onboard(vault):
     )
 
 
+@main.command(name="install-mcp")
+def install_mcp_cmd():
+    """Install vn-business-os as MCP server in Claude Desktop config.
+
+    Edits claude_desktop_config.json to register MCP server entry.
+    After install, restart Claude Desktop to load the server.
+    """
+    from core.install_mcp import install
+    result = install()
+    if not result["ok"]:
+        console.print(f"[red]✗ {result.get('error', 'install failed')}[/]")
+        return
+    console.print(f"[green]✓ Installed MCP server '{result['server_name']}'[/]")
+    console.print(f"   Config: {result['config_path']}")
+    if result.get("backup"):
+        console.print(f"   Backup: {result['backup']}")
+    console.print(f"   Command: {result['command']} {' '.join(result.get('args', []))}")
+    console.print(f"\n[bold]Bước tiếp:[/] Restart Claude Desktop để load MCP server.")
+
+
+@main.command(name="uninstall-mcp")
+def uninstall_mcp_cmd():
+    """Remove vn-business-os MCP server from Claude Desktop config."""
+    from core.install_mcp import uninstall
+    result = uninstall()
+    if result.get("removed"):
+        console.print(f"[green]✓ Removed MCP server entry from {result['config_path']}[/]")
+    else:
+        console.print(f"[yellow]→ Nothing to remove ({result.get('reason', 'unknown')})[/]")
+
+
 if __name__ == "__main__":
     main()
