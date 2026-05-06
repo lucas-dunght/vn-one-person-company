@@ -1,9 +1,11 @@
-code: "11-reporting"
-name_vn: "Báo cáo & Đo lường"
+code: 11-reporting
+name_vn: Báo cáo & Đo lường
 tier: 4
-description: "Phòng Báo cáo & Đo lường."
-agents: []
-default_speaker: ""
+description: Phòng Báo cáo & Đo lường.
+agents:
+- data-analyst
+- dashboard-designer
+default_speaker: data-analyst
 refs_folder: refs/
 depends_on: []
 debate_role:
