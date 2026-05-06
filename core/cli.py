@@ -33,9 +33,45 @@ def status(vault):
 @click.option("--brief", required=True, help="Task brief (Vietnamese)")
 @click.option("--vault", type=click.Path(), default=".")
 def run(brief, vault):
-    """Chạy task qua orchestrator."""
-    console.print(f"[yellow]TODO Phase 3:[/] sẽ kết nối orchestrator")
-    console.print(f"Brief: {brief}")
+    """Chạy task qua orchestrator (Stage 1: brief → clarification)."""
+    from pathlib import Path
+    from core.orchestrator.flow_controller import FlowController, FlowStage
+    from core.llm.providers import get_default_provider
+
+    fc = FlowController(vault_root=Path(vault), llm=get_default_provider())
+    result = fc.run(brief)
+
+    if result.stage == FlowStage.PAUSE_CLARIFICATION:
+        console.print(f"[yellow]⏸  Pause cho clarification[/]")
+        console.print(f"   Folder: {result.task_folder}")
+        console.print(f"   {result.message}")
+        console.print(f"\n[bold]Bước tiếp:[/] mở {result.task_folder}/03-clarification.md, "
+                      f"tick câu trả lời, lưu file. Rồi chạy:")
+        console.print(f"  [cyan]vn-os resume {result.task_folder}[/]")
+    elif result.stage == FlowStage.ERROR:
+        console.print(f"[red]✗ {result.error}[/]")
+    else:
+        console.print(f"[green]→ {result.stage.value}[/]: {result.message}")
+
+
+@main.command()
+@click.argument("task_folder", type=click.Path(exists=True))
+def resume(task_folder):
+    """Resume flow sau khi CEO trả lời clarification."""
+    from pathlib import Path
+    from core.orchestrator.flow_controller import FlowController, FlowStage
+    from core.llm.providers import get_default_provider
+
+    folder = Path(task_folder)
+    vault_root = folder.parent.parent   # task_folder = vault/02-Tasks/<id>
+
+    fc = FlowController(vault_root=vault_root, llm=get_default_provider())
+    result = fc.resume_after_clarification(folder)
+    if result.stage == FlowStage.ERROR:
+        console.print(f"[red]✗ {result.error}[/]")
+    else:
+        console.print(f"[cyan]Stage:[/] {result.stage.value}")
+        console.print(f"   {result.message}")
 
 
 @main.command()
