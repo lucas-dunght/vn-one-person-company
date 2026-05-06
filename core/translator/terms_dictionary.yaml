@@ -1,0 +1,63 @@
+marketing:
+  CAC:
+    vn: "Chi phí thu được 1 khách hàng"
+    formula: "Tổng chi MKT + Sales / Số khách mới"
+    example: "Chi 100tr MKT, có 20 khách → CAC = 5tr/khách"
+  CTR:
+    vn: "Tỷ lệ click — % người thấy ad bấm vào"
+    benchmark_vn: "FB B2C: 1-2%, LinkedIn B2B: 0.3-0.5%"
+  ROAS:
+    vn: "Tỷ lệ doanh thu / chi phí ads"
+    example: "Chi 1tr ads thu 4tr doanh thu → ROAS = 4x"
+  CPL:
+    vn: "Chi phí cho 1 lead (khách quan tâm)"
+  ICP:
+    vn: "Hồ sơ khách hàng lý tưởng (Ideal Customer Profile)"
+  SQL:
+    vn: "Sales Qualified Lead — khách đã đủ điều kiện sales tiếp cận"
+
+finance:
+  EBITDA:
+    vn: "Lợi nhuận trước lãi vay, thuế, khấu hao"
+  burn_rate:
+    vn: "Tốc độ đốt tiền — mỗi tháng âm bao nhiêu"
+  runway:
+    vn: "Tiền còn đủ chạy bao nhiêu tháng (nếu không có doanh thu mới)"
+  COGS:
+    vn: "Giá vốn hàng bán"
+  GMV:
+    vn: "Tổng giá trị giao dịch"
+  AOV:
+    vn: "Giá trị đơn trung bình"
+
+saas:
+  MRR:
+    vn: "Doanh thu định kỳ tháng (Monthly Recurring Revenue)"
+  ARR:
+    vn: "Doanh thu định kỳ năm (Annual Recurring Revenue)"
+  churn_rate:
+    vn: "Tỷ lệ khách rời bỏ"
+  LTV:
+    vn: "Giá trị vòng đời khách hàng (Lifetime Value)"
+  DAU:
+    vn: "Người dùng active hằng ngày"
+  MAU:
+    vn: "Người dùng active hằng tháng"
+
+operations:
+  SOP:
+    vn: "Quy trình tác nghiệp chuẩn (Standard Operating Procedure)"
+  KPI:
+    vn: "Chỉ số đo hiệu quả (Key Performance Indicator)"
+  OKR:
+    vn: "Mục tiêu + kết quả then chốt (Objectives & Key Results)"
+
+restaurant:
+  food_cost_pct:
+    vn: "Tỷ lệ giá vốn nguyên liệu / doanh thu"
+    target_vn: "< 35% là tốt"
+  table_turn:
+    vn: "Số lượt bàn đảo / ngày"
+  labor_cost_pct:
+    vn: "Tỷ lệ chi phí lương / doanh thu"
+    target_vn: "< 30% là tốt"
