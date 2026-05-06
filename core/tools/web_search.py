@@ -17,7 +17,15 @@ class WebSearch(BaseTool):
             ttl_seconds=self.cache_ttl_seconds,
         )
 
+    def is_available(self) -> bool:
+        return bool(self.api_key)
+
     def run(self, query: str, max_results: int = 5, **kwargs) -> ToolResult:
+        if not self.is_available():
+            return self.skipped_result(
+                "Thiếu TAVILY_API_KEY — set trong vault/.env hoặc env var"
+            )
+
         cache_hit = self.cache.get(query, source=self.name)
         if cache_hit:
             return ToolResult(
@@ -25,7 +33,11 @@ class WebSearch(BaseTool):
                 cached=True, notes="cache hit",
             )
 
-        from tavily import TavilyClient
+        try:
+            from tavily import TavilyClient
+        except ImportError:
+            return self.skipped_result("Package 'tavily-python' chưa cài")
+
         client = TavilyClient(api_key=self.api_key)
         resp = client.search(query=query, max_results=max_results, include_answer=True)
 

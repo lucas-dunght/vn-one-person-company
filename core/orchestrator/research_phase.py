@@ -21,9 +21,41 @@ TOOL_REGISTRY = {
 }
 
 
+def list_available_tools() -> list[str]:
+    """Returns tool names có credentials/dependencies. Safe to call anywhere."""
+    available: list[str] = []
+    for name, cls in TOOL_REGISTRY.items():
+        try:
+            instance = cls()
+            if instance.is_available():
+                available.append(name)
+        except Exception:  # noqa: BLE001
+            pass
+    return available
+
+
+def list_skipped_tools() -> list[dict]:
+    """Returns list of {name, reason} for tools missing credentials."""
+    skipped: list[dict] = []
+    for name, cls in TOOL_REGISTRY.items():
+        try:
+            instance = cls()
+            if not instance.is_available():
+                skipped.append({
+                    "name": name,
+                    "reason": "Missing TAVILY_API_KEY"
+                            if "search" in name or "research" in name or "regulation" in name
+                            else "Unavailable",
+                })
+        except Exception as e:  # noqa: BLE001
+            skipped.append({"name": name, "reason": str(e)})
+    return skipped
+
+
 class ResearchPhase:
     def __init__(self, llm):
-        self.tool_router = ToolRouter(llm)
+        # Filter ToolRouter to only credentialed tools (RULE 5 — no silent fail)
+        self.tool_router = ToolRouter(llm, available_tools=list_available_tools())
 
     def run(self, brief: str, brain_summary: str, task_folder: Path) -> dict:
         plan = self.tool_router.plan(brief, brain_summary)

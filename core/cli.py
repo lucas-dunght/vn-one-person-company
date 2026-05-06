@@ -138,14 +138,23 @@ def onboard(vault):
 
 
 @main.command(name="install-mcp")
-def install_mcp_cmd():
+@click.option(
+    "--vault",
+    type=click.Path(exists=True, file_okay=False),
+    help="Vault path để load .env (TAVILY_API_KEY, ...) inject vào MCP env",
+)
+def install_mcp_cmd(vault):
     """Install vn-business-os as MCP server in Claude Desktop config.
 
     Edits claude_desktop_config.json to register MCP server entry.
+    Pass --vault để inject API keys từ <vault>/.env vào mcpServers env, giúp
+    search tools (Tavily) chạy được khi Claude Desktop launch MCP server.
+
     After install, restart Claude Desktop to load the server.
     """
     from core.install_mcp import install
-    result = install()
+    from pathlib import Path
+    result = install(vault_path=Path(vault) if vault else None)
     if not result["ok"]:
         console.print(f"[red]✗ {result.get('error', 'install failed')}[/]")
         return
@@ -154,6 +163,10 @@ def install_mcp_cmd():
     if result.get("backup"):
         console.print(f"   Backup: {result['backup']}")
     console.print(f"   Command: {result['command']} {' '.join(result.get('args', []))}")
+    if result.get("env_keys_injected"):
+        console.print(
+            f"   Env injected: {', '.join(result['env_keys_injected'])}"
+        )
     console.print(f"\n[bold]Bước tiếp:[/] Restart Claude Desktop để load MCP server.")
 
 

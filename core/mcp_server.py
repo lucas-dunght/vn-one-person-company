@@ -39,7 +39,12 @@ def _make_fc(vault_root: str, ctx: Context) -> FlowController:
 
     `ctx.session` is the ServerSession exposing async `create_message(...)` —
     MCPSamplingProvider routes complete() through it (sampling protocol).
+
+    Cũng load vault/.env (TAVILY_API_KEY, ...) vào os.environ để tools tìm thấy.
     """
+    from core.utils.config import apply_vault_env_to_os
+    apply_vault_env_to_os(Path(vault_root))
+
     session = ctx.session
     llm = MCPSamplingProvider(session)
     return FlowController(vault_root=Path(vault_root), llm=llm)
@@ -149,8 +154,18 @@ def vn_execute(task_folder: str, ctx: Context) -> dict:
 
 @mcp.tool()
 def vn_status(vault: str) -> dict:
-    """Inspect vault — Brain summary + active depts + active tasks. No LLM."""
+    """Inspect vault — Brain summary + active depts + tasks + tool availability.
+
+    Live research tools (web/luật/địa phương/đối thủ) chỉ chạy khi có
+    TAVILY_API_KEY. vn_status báo rõ tool nào đang sẵn sàng vs skipped để CEO biết
+    decision report sẽ dựa research thật hay chỉ Brain + LLM knowledge.
+    """
     vault_path = Path(vault)
+
+    # Apply vault/.env to os.environ trước khi check tool availability
+    from core.utils.config import apply_vault_env_to_os
+    apply_vault_env_to_os(vault_path)
+
     try:
         brain = BrainReader(vault_path).load()
     except FileNotFoundError as e:
@@ -158,6 +173,10 @@ def vn_status(vault: str) -> dict:
 
     vault_obj = ObsidianVault(vault_path)
     tasks = vault_obj.list_tasks()
+
+    from core.orchestrator.research_phase import (
+        list_available_tools, list_skipped_tools,
+    )
 
     return {
         "vault": str(vault_path),
@@ -167,26 +186,48 @@ def vn_status(vault: str) -> dict:
         "active_departments": brain.headcount.active_departments,
         "state": brain.state,
         "active_tasks": [t.name for t in tasks],
+        "tools_live": list_available_tools(),
+        "tools_skipped": list_skipped_tools(),
     }
 
 
 @mcp.tool()
-def vn_onboard(vault: str, packs: list[str] | None = None) -> dict:
+def vn_onboard(
+    vault: str,
+    packs: list[str] | None = None,
+    tavily_api_key: str = "",
+    anthropic_api_key: str = "",
+    google_api_key: str = "",
+    openai_api_key: str = "",
+) -> dict:
     """Create vault scaffold for new company.
 
-    Calls core.onboard.onboard_vault directly (no subprocess) so MCP request
-    thread is not blocked — fixes Claude Desktop timeout issue.
+    Calls core.onboard.onboard_vault directly (no subprocess).
 
     Args:
         vault: Path where vault will be created
-        packs: Optional list of pack codes to install (fnb, retail, tech-saas)
+        packs: Optional list of pack codes (fnb, retail, tech-saas)
+        tavily_api_key: KHUYẾN NGHỊ — bật 4 search tools (luật/đối thủ/web/địa phương).
+                        Lấy free tier tại https://tavily.com (1000 req/tháng miễn phí).
+                        Nếu để trống: search tools sẽ skip gracefully — flow vẫn chạy
+                        nhưng decision report dựa hoàn toàn vào Brain + LLM knowledge.
+        anthropic_api_key: Optional fallback nếu không dùng MCP sampling
+        google_api_key: Optional cho Gemini fallback
+        openai_api_key: Optional cho GPT fallback
 
-    Returns dict with steps performed, packs installed, warnings, next_steps.
+    Returns dict với steps, packs, warnings, next_steps, api_keys_saved.
     """
+    keys = {
+        "TAVILY_API_KEY": tavily_api_key,
+        "ANTHROPIC_API_KEY": anthropic_api_key,
+        "GOOGLE_API_KEY": google_api_key,
+        "OPENAI_API_KEY": openai_api_key,
+    }
     return onboard_vault(
         vault_path=vault,
         packs=packs or [],
         init_git=True,
+        api_keys=keys,
     )
 
 

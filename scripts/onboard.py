@@ -40,6 +40,7 @@ def main(vault, non_interactive, pack):
                 return
 
     # Interactive pack selection
+    api_keys: dict[str, str] = {}
     if not non_interactive and not selected_packs:
         from rich.prompt import Confirm, Prompt
 
@@ -58,6 +59,25 @@ def main(vault, non_interactive, pack):
                 "  Đường dẫn folder template (sẽ copy vào 00-Templates-Custom/)"
             )
 
+    # Interactive API key prompts
+    if not non_interactive:
+        from rich.prompt import Confirm, Prompt
+        console.print(
+            "\n[bold]API Keys[/] — Search/research tools cần TAVILY_API_KEY "
+            "(luật, đối thủ, web). Bỏ qua → tools skip nhưng flow vẫn chạy."
+        )
+        if Confirm.ask("  Nhập TAVILY_API_KEY ngay?", default=False):
+            console.print(
+                "    [dim]Free tier 1000 req/tháng tại https://tavily.com[/]"
+            )
+            tavily = Prompt.ask("    TAVILY_API_KEY", default="", password=True)
+            if tavily:
+                api_keys["TAVILY_API_KEY"] = tavily
+        if Confirm.ask("  Nhập ANTHROPIC_API_KEY (fallback ngoài MCP)?", default=False):
+            anth = Prompt.ask("    ANTHROPIC_API_KEY", default="", password=True)
+            if anth:
+                api_keys["ANTHROPIC_API_KEY"] = anth
+
     # Run onboard via lib
     console.print("[bold]Đang tạo vault...[/]")
     result = onboard_vault(
@@ -65,6 +85,7 @@ def main(vault, non_interactive, pack):
         packs=selected_packs,
         byot_src=byot_src,
         init_git=True,
+        api_keys=api_keys if api_keys else None,
     )
 
     if not result.get("ok"):

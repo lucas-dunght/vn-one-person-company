@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import pytest
 from core.install_mcp import install, uninstall, get_config_path
+from core.utils.config import save_vault_env
 
 
 def test_get_config_path_returns_platform_specific(monkeypatch):
@@ -92,3 +93,28 @@ def test_uninstall_no_config_is_safe(tmp_path):
     result = uninstall(config_path=cfg)
     assert result["ok"] is True
     assert result["removed"] is False
+
+
+def test_install_injects_env_from_vault(tmp_path):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    save_vault_env(vault, {"TAVILY_API_KEY": "test-key-123"})
+
+    cfg = tmp_path / "claude_desktop_config.json"
+    result = install(config_path=cfg, vault_path=vault)
+
+    assert result["ok"] is True
+    assert "TAVILY_API_KEY" in result["env_keys_injected"]
+
+    config = json.loads(cfg.read_text(encoding="utf-8"))
+    server = config["mcpServers"]["vn-business-os"]
+    assert server["env"]["TAVILY_API_KEY"] == "test-key-123"
+
+
+def test_install_no_vault_no_env_field(tmp_path):
+    cfg = tmp_path / "claude_desktop_config.json"
+    result = install(config_path=cfg)
+    config = json.loads(cfg.read_text(encoding="utf-8"))
+    server = config["mcpServers"]["vn-business-os"]
+    assert "env" not in server
+    assert result["env_keys_injected"] == []

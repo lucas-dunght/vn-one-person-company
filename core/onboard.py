@@ -18,6 +18,7 @@ def onboard_vault(
     byot_src: Path | str | None = None,
     init_git: bool = True,
     overwrite_brain_template: bool = True,
+    api_keys: dict[str, str] | None = None,
 ) -> dict:
     """Create vault scaffold for new company.
 
@@ -27,6 +28,9 @@ def onboard_vault(
         byot_src: Optional path to existing template folder to import as BYOT
         init_git: Initialize Git repo (best-effort, never push)
         overwrite_brain_template: Use first pack's brain template if available
+        api_keys: Optional dict {KEY_NAME: value} saved vào <vault>/.env.
+                  Common keys: TAVILY_API_KEY (search), GOOGLE/OPENAI/ANTHROPIC.
+                  Search tools sẽ skip gracefully nếu thiếu.
 
     Returns:
         dict with status, paths created, packs installed, errors
@@ -97,6 +101,17 @@ def onboard_vault(
             result["steps"].append("Git initialized")
         except Exception as e:  # noqa: BLE001
             result["warnings"].append(f"Git init failed: {e}")
+
+    # Step 6.5: Save API keys vào vault/.env (nếu user cung cấp)
+    if api_keys:
+        from core.utils.config import save_vault_env
+        env_path = save_vault_env(vault, api_keys)
+        keys_saved = [k for k, v in api_keys.items() if v]
+        result["steps"].append(
+            f"Saved {len(keys_saved)} API key(s) → {env_path.name} "
+            f"({', '.join(keys_saved) if keys_saved else 'none'})"
+        )
+        result["api_keys_saved"] = keys_saved
 
     # Step 7: Generate wikilinks (Brain hub + Dept hubs + agent cross-links)
     from core.wikilinks import generate_wikilinks

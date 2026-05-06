@@ -27,6 +27,25 @@ class BaseTool(ABC):
     def run(self, query: str, **kwargs) -> ToolResult:
         ...
 
+    def is_available(self) -> bool:
+        """Check tool có credentials/dependencies cần thiết không.
+
+        Default: True. Tools cần API key override để check key presence.
+        """
+        return True
+
+    def skipped_result(self, reason: str) -> ToolResult:
+        """Helper trả về ToolResult chỉ rõ tool đã skip vì lý do gì.
+
+        Caller (ResearchPhase) thấy `data["skipped"]=True` thì biết tool không
+        chạy thật, RULE 5 vẫn được respect (không silently violate).
+        """
+        return ToolResult(
+            data={"skipped": True, "reason": reason},
+            sources=[],
+            notes=f"SKIPPED: {reason}",
+        )
+
     def cache_key(self, query: str, **kwargs) -> str:
         import json
         return f"{self.name}::{query}::{json.dumps(sorted(kwargs.items()))}"

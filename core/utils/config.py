@@ -28,6 +28,15 @@ class Config(BaseModel):
     llm: LLMConfig = Field(default_factory=LLMConfig)
 
 
+KNOWN_API_KEYS = [
+    "TAVILY_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GOOGLE_API_KEY",
+    "OPENAI_API_KEY",
+    "BRAVE_API_KEY",
+]
+
+
 def load_config(path: Optional[Path] = None) -> Config:
     """Load config from path, ~/.vncoderc, or return defaults."""
     candidates = ([path] if path else []) + [Path.home() / ".vncoderc"]
@@ -38,3 +47,62 @@ def load_config(path: Optional[Path] = None) -> Config:
             except Exception:
                 pass  # malformed config — fall through to defaults
     return Config()
+
+
+def load_vault_env(vault_path: Path) -> dict[str, str]:
+    """Đọc <vault>/.env → dict (chỉ keys *_API_KEY), không inject vào os.environ."""
+    env_path = Path(vault_path) / ".env"
+    if not env_path.exists():
+        return {}
+    result: dict[str, str] = {}
+    for raw in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, _, v = line.partition("=")
+        k = k.strip()
+        v = v.strip().strip('"').strip("'")
+        if k.endswith("_API_KEY") or k in KNOWN_API_KEYS:
+            result[k] = v
+    return result
+
+
+def save_vault_env(vault_path: Path, keys: dict[str, str]) -> Path:
+    """Save API keys vào <vault>/.env (merge với keys đã có). Đảm bảo .gitignore.
+
+    Args:
+        vault_path: Vault directory
+        keys: Dict {KEY_NAME: value}. Empty values bị skip.
+    """
+    vault = Path(vault_path)
+    env_path = vault / ".env"
+    existing = load_vault_env(vault) if env_path.exists() else {}
+    existing.update({k: v for k, v in keys.items() if v})
+
+    lines = ["# VN Business OS — API keys (KHÔNG commit file này)"]
+    for k in KNOWN_API_KEYS:
+        if k in existing:
+            lines.append(f"{k}={existing[k]}")
+    for k in sorted(existing):
+        if k not in KNOWN_API_KEYS:
+            lines.append(f"{k}={existing[k]}")
+    env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    gitignore = vault / ".gitignore"
+    ignore_lines = (
+        gitignore.read_text(encoding="utf-8").splitlines() if gitignore.exists() else []
+    )
+    if ".env" not in {ln.strip() for ln in ignore_lines}:
+        ignore_lines.append(".env")
+        gitignore.write_text("\n".join(ignore_lines) + "\n", encoding="utf-8")
+
+    return env_path
+
+
+def apply_vault_env_to_os(vault_path: Path) -> dict[str, str]:
+    """Load vault/.env và set vào os.environ (chỉ nếu chưa có). Returns keys applied."""
+    keys = load_vault_env(vault_path)
+    for k, v in keys.items():
+        if v and not os.environ.get(k):
+            os.environ[k] = v
+    return keys

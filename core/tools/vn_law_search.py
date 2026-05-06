@@ -25,13 +25,25 @@ class VNLawSearch(BaseTool):
             cache_path or Path.home() / ".vn-business-os" / "tool_cache.db",
         )
 
+    def is_available(self) -> bool:
+        return bool(self.api_key)
+
     def run(self, query: str, **kwargs) -> ToolResult:
+        if not self.is_available():
+            return self.skipped_result(
+                "Thiếu TAVILY_API_KEY — không tra được luật/nghị định online"
+            )
+
         cache_hit = self.cache.get(query, source=self.name)
         if cache_hit:
             return ToolResult(data=cache_hit, sources=cache_hit.get("urls", []),
                               cached=True, notes="cache hit")
 
-        from tavily import TavilyClient
+        try:
+            from tavily import TavilyClient
+        except ImportError:
+            return self.skipped_result("Package 'tavily-python' chưa cài")
+
         client = TavilyClient(api_key=self.api_key)
         resp = client.search(
             query=query, max_results=8,

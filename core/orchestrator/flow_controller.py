@@ -164,7 +164,11 @@ class FlowController:
         )
 
         # 2. Meeting graph
-        departments_root = Path(__file__).parent.parent.parent / "departments"
+        # P0.3 fix: use vault/01-Departments so BYOT + pack depts are picked up.
+        # Fallback to repo/departments/ if vault path absent (test fixtures, CI).
+        vault_depts = self.vault.root / "01-Departments"
+        repo_depts = Path(__file__).parent.parent.parent / "departments"
+        departments_root = vault_depts if vault_depts.exists() else repo_depts
         collector = PerspectivesCollector(departments_root, self.llm)
 
         graph = MeetingGraph(
@@ -239,29 +243,86 @@ class FlowController:
         )
 
     def approve_decision(self, task_folder: Path, decision: str = "approve") -> FlowResult:
-        """Stage 4: CEO duyệt decision report → execution plan."""
-        # Stub for v1 — Phase 6 wires actual execution plan generation
-        (task_folder / "08-execution-plan.md").write_text(
-            "---\ntype: execution_plan\nstop: 2\n---\n# Execution Plan\n\n(TODO Phase 6: generate from decision report)",
-            encoding="utf-8",
-        )
+        """Stage 4: CEO duyệt decision report → generate structured execution plan (P0.2)."""
+        from core.translator.pipeline import TranslatorPipeline
+        from core.orchestrator.execution_planner import generate_execution_plan
+
+        glossary_path = self.vault.root / "00-Brain" / "glossary.md"
+        translator = TranslatorPipeline(self.llm, vault_glossary_path=glossary_path)
+
+        try:
+            plan_path = generate_execution_plan(
+                task_folder=task_folder,
+                llm=self.llm,
+                translator=translator,
+            )
+        except FileNotFoundError as exc:
+            return FlowResult(
+                stage=FlowStage.ERROR,
+                task_folder=task_folder,
+                error=str(exc),
+            )
+        except Exception as exc:
+            return FlowResult(
+                stage=FlowStage.ERROR,
+                task_folder=task_folder,
+                error=f"Lỗi khi sinh execution plan: {exc}",
+            )
+
         return FlowResult(
             stage=FlowStage.PAUSE_EXECUTE,
             task_folder=task_folder,
-            message="Execution plan stub created. Run 'execute' to generate output docs.",
+            message=f"Execution plan sẵn ở {plan_path.name}. Chạy 'execute' để sinh tài liệu.",
         )
 
     def execute(self, task_folder: Path) -> FlowResult:
-        """Stage 5: render docs → 03-Outputs/."""
-        # Stub for v1 — Phase 6 wires DocWriter + TemplateResolver
-        outputs_dir = self.vault.root / "03-Outputs" / task_folder.name
-        outputs_dir.mkdir(parents=True, exist_ok=True)
-        (outputs_dir / "README.md").write_text(
-            f"# Outputs for {task_folder.name}\n\n(TODO Phase 6: render .docx/.xlsx via DocWriter)",
-            encoding="utf-8",
-        )
+        """Stage 5: render docs from execution plan → 03-Outputs/ (P0.1)."""
+        from core.orchestrator.document_executor import execute_documents
+        from core.brain.reader import BrainReader
+
+        repo_root = Path(__file__).parent.parent.parent
+
+        # Load brain context for template substitutions (best-effort)
+        brain_context: dict | None = None
+        try:
+            brain = BrainReader(self.vault.root).load()
+            brain_context = brain.model_dump()
+        except Exception:
+            pass  # brain unavailable — substitutions will use task metadata only
+
+        try:
+            result = execute_documents(
+                task_folder=task_folder,
+                vault_root=self.vault.root,
+                repo_root=repo_root,
+                llm=self.llm,
+                brain_context=brain_context,
+            )
+        except FileNotFoundError as exc:
+            return FlowResult(
+                stage=FlowStage.ERROR,
+                task_folder=task_folder,
+                error=str(exc),
+            )
+        except Exception as exc:
+            return FlowResult(
+                stage=FlowStage.ERROR,
+                task_folder=task_folder,
+                error=f"Lỗi khi render tài liệu: {exc}",
+            )
+
+        generated = result["generated"]
+        skipped = result["skipped"]
+        outputs_dir = result["outputs_dir"]
+
+        parts = [f"Đã tạo {len(generated)} tài liệu trong 03-Outputs/{task_folder.name}/"]
+        if generated:
+            parts.append("Tài liệu: " + ", ".join(Path(g).name for g in generated))
+        if skipped:
+            parts.append(f"Bỏ qua {len(skipped)} mẫu không tìm thấy: " + "; ".join(skipped))
+
         return FlowResult(
             stage=FlowStage.DONE,
             task_folder=task_folder,
-            message=f"Done. Outputs at {outputs_dir.relative_to(self.vault.root)}",
+            message=" | ".join(parts),
         )

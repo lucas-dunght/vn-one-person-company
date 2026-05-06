@@ -20,13 +20,25 @@ class VNLocalRegulation(BaseTool):
         self.api_key = api_key or os.getenv("TAVILY_API_KEY", "")
         self.cache = ToolCache(cache_path or Path.home() / ".vn-business-os" / "tool_cache.db")
 
+    def is_available(self) -> bool:
+        return bool(self.api_key)
+
     def run(self, query: str, province: str = "", **kwargs) -> ToolResult:
+        if not self.is_available():
+            return self.skipped_result(
+                "Thiếu TAVILY_API_KEY — không tra được quy định địa phương online"
+            )
+
         full_q = f"{query} {province}".strip()
         hit = self.cache.get(full_q, source=self.name)
         if hit:
             return ToolResult(data=hit, sources=hit.get("urls", []), cached=True)
 
-        from tavily import TavilyClient
+        try:
+            from tavily import TavilyClient
+        except ImportError:
+            return self.skipped_result("Package 'tavily-python' chưa cài")
+
         client = TavilyClient(api_key=self.api_key)
         resp = client.search(
             query=full_q, max_results=6,

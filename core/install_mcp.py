@@ -41,8 +41,21 @@ def get_server_command() -> tuple[str, list[str]]:
     return sys.executable, ["-m", "core.mcp_server"]
 
 
-def install(config_path: Optional[Path] = None, server_name: str = "vn-business-os") -> dict:
-    """Install (or update) MCP server entry. Returns summary dict."""
+def install(
+    config_path: Optional[Path] = None,
+    server_name: str = "vn-business-os",
+    vault_path: Optional[Path] = None,
+) -> dict:
+    """Install (or update) MCP server entry. Returns summary dict.
+
+    Args:
+        config_path: Override path to claude_desktop_config.json
+        server_name: Name in mcpServers dict
+        vault_path: Optional vault để load <vault>/.env (TAVILY_API_KEY, ...)
+                    và inject vào `env` của mcpServers entry. Cho phép Claude
+                    Desktop launch MCP server với credentials sẵn — search tools
+                    không skip silently.
+    """
     cfg_path = config_path or get_config_path()
     cfg_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -63,9 +76,18 @@ def install(config_path: Optional[Path] = None, server_name: str = "vn-business-
 
     # Build server entry
     command, args = get_server_command()
-    server_entry = {"command": command}
+    server_entry: dict = {"command": command}
     if args:
         server_entry["args"] = args
+
+    # Inject env từ vault/.env nếu có vault_path
+    env_keys_injected: list[str] = []
+    if vault_path:
+        from core.utils.config import load_vault_env
+        keys = load_vault_env(Path(vault_path))
+        if keys:
+            server_entry["env"] = {k: v for k, v in keys.items() if v}
+            env_keys_injected = list(server_entry["env"].keys())
 
     # Insert into mcpServers
     config.setdefault("mcpServers", {})
@@ -84,6 +106,7 @@ def install(config_path: Optional[Path] = None, server_name: str = "vn-business-
         "server_name": server_name,
         "command": command,
         "args": args,
+        "env_keys_injected": env_keys_injected,
     }
 
 

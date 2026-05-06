@@ -14,14 +14,26 @@ class CompetitorResearch(BaseTool):
         self.api_key = api_key or os.getenv("TAVILY_API_KEY", "")
         self.cache = ToolCache(cache_path or Path.home() / ".vn-business-os" / "tool_cache.db")
 
+    def is_available(self) -> bool:
+        return bool(self.api_key)
+
     def run(self, query: str, country: str = "VN", **kwargs) -> ToolResult:
+        if not self.is_available():
+            return self.skipped_result(
+                "Thiếu TAVILY_API_KEY — không research đối thủ online được"
+            )
+
         full_query = f"{query} đối thủ cạnh tranh {country}"
         cache_hit = self.cache.get(full_query, source=self.name)
         if cache_hit:
             return ToolResult(data=cache_hit, sources=cache_hit.get("urls", []),
                               cached=True, notes="cache hit")
 
-        from tavily import TavilyClient
+        try:
+            from tavily import TavilyClient
+        except ImportError:
+            return self.skipped_result("Package 'tavily-python' chưa cài")
+
         client = TavilyClient(api_key=self.api_key)
         resp = client.search(query=full_query, max_results=8, include_answer=True)
         urls = [r["url"] for r in resp.get("results", [])]
