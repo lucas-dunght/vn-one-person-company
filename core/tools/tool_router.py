@@ -80,15 +80,51 @@ class ToolRouter:
             )},
         ]
         raw = self.llm.complete(messages)
-        m = re.search(r"\{.*\}", raw, re.DOTALL)
-        if not m:
-            return []
-        try:
-            data = json.loads(m.group(0))
-        except json.JSONDecodeError:
+        # P2.2: robust JSON parse — handle code fence + balanced braces + greedy fallback
+        data = self._extract_json(raw)
+        if data is None:
             return []
         plan = data.get("tools", [])
         # Defensive filter: drop tools không trong available list
         if self.available_tools is not None:
             plan = [t for t in plan if t.get("tool") in self.available_tools]
         return plan
+
+    @staticmethod
+    def _extract_json(raw: str) -> dict | None:
+        """Extract JSON từ LLM output — same strategies như Router._parse_json."""
+        text = raw.strip()
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+
+        fence = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+        if fence:
+            try:
+                return json.loads(fence.group(1))
+            except json.JSONDecodeError:
+                pass
+
+        start = text.find("{")
+        if start >= 0:
+            depth = 0
+            for i in range(start, len(text)):
+                ch = text[i]
+                if ch == "{":
+                    depth += 1
+                elif ch == "}":
+                    depth -= 1
+                    if depth == 0:
+                        try:
+                            return json.loads(text[start:i + 1])
+                        except json.JSONDecodeError:
+                            break
+
+        m = re.search(r"\{.*\}", text, re.DOTALL)
+        if m:
+            try:
+                return json.loads(m.group(0))
+            except json.JSONDecodeError:
+                return None
+        return None

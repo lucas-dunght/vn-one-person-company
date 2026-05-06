@@ -35,7 +35,20 @@ class FlowResult:
 
 
 def _slugify(brief: str, max_len: int = 50) -> str:
-    s = re.sub(r"[^\w\s-]", "", brief.lower())
+    """Slug từ tiếng Việt có dấu → ASCII kebab-case.
+
+    P2.6: dùng unicodedata.normalize NFKD để bóc dấu (vd "Tài chính" → "tai-chinh").
+    Trước đây regex \\w+ giữ nguyên dấu Unicode → folder name có dấu trên Windows
+    có thể gây edge case path; chuẩn hoá ASCII an toàn hơn.
+    """
+    import unicodedata
+    # NFKD decompose: "ư" → "u" + "̛", "đ" → "d" + " ̌"; rồi drop combining marks
+    decomposed = unicodedata.normalize("NFKD", brief.lower())
+    ascii_only = "".join(c for c in decomposed if not unicodedata.combining(c))
+    # Đặc biệt: "đ" không decompose chuẩn → manual replace
+    ascii_only = ascii_only.replace("đ", "d").replace("Đ", "d")
+    # Strip non-alphanumeric (giữ space + dash để chuyển)
+    s = re.sub(r"[^a-z0-9\s-]", "", ascii_only)
     s = re.sub(r"\s+", "-", s.strip())[:max_len]
     return s.strip("-") or "task"
 
@@ -163,8 +176,8 @@ class FlowController:
         brief = self._read_brief(task_folder)
         brain = BrainReader(self.vault.root).load()
 
-        # 1. Research phase (RULE 5)
-        research = ResearchPhase(self.llm)
+        # 1. Research phase (RULE 5) — cache per-vault (P2.3)
+        research = ResearchPhase(self.llm, vault_root=self.vault.root)
         findings = research.run(
             brief=brief,
             brain_summary=brain.model_dump_json()[:3000],

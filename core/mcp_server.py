@@ -178,6 +178,34 @@ def vn_status(vault: str) -> dict:
         list_available_tools, list_skipped_tools,
     )
 
+    # P2.5: Báo packs đã cài + compliance refs (PackLoader integration)
+    packs_info: list[dict] = []
+    try:
+        from core.agents.pack_loader import PackLoader
+        from core.utils.config import load_vault_env
+        # Đọc .vncoderc của vault để biết packs đã cài
+        vncoderc = vault_path / ".vncoderc"
+        installed_codes: list[str] = []
+        if vncoderc.exists():
+            import yaml
+            cfg = yaml.safe_load(vncoderc.read_text(encoding="utf-8")) or {}
+            installed_codes = cfg.get("packs", []) or []
+        repo = Path(__file__).parent.parent
+        loader = PackLoader(repo / "packs")
+        for code in installed_codes:
+            try:
+                pack = loader.load(code)
+                packs_info.append({
+                    "code": pack.code,
+                    "name": pack.name,
+                    "version": pack.version,
+                    "compliance_refs": pack.compliance_refs,
+                })
+            except FileNotFoundError:
+                pass
+    except Exception:  # noqa: BLE001
+        pass
+
     return {
         "vault": str(vault_path),
         "icp": brain.strategy.icp[:200],
@@ -188,6 +216,7 @@ def vn_status(vault: str) -> dict:
         "active_tasks": [t.name for t in tasks],
         "tools_live": list_available_tools(),
         "tools_skipped": list_skipped_tools(),
+        "packs": packs_info,
     }
 
 

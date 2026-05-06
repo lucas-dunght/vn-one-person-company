@@ -82,7 +82,53 @@ class Router:
 
     @staticmethod
     def _parse_json(raw: str) -> dict:
-        m = re.search(r"\{.*\}", raw, re.DOTALL)
-        if not m:
-            raise ValueError(f"Router output no JSON: {raw[:200]}")
-        return json.loads(m.group(0))
+        """Parse JSON từ LLM output — robust với multi-block, code fence, prose.
+
+        P2.2: Thay vì regex `\\{.*\\}` greedy (match từ `{` đầu tới `}` cuối,
+        có thể merge nhiều JSON object), thử các strategies theo thứ tự:
+        1. Direct json.loads (nếu LLM JSON-mode return clean)
+        2. Strip ```json ... ``` code fence
+        3. Tìm JSON object cân bằng đầu tiên (balance braces)
+        4. Fallback regex greedy như cũ
+        """
+        text = raw.strip()
+
+        # Strategy 1: direct
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+
+        # Strategy 2: code fence
+        fence_match = re.search(
+            r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL
+        )
+        if fence_match:
+            try:
+                return json.loads(fence_match.group(1))
+            except json.JSONDecodeError:
+                pass
+
+        # Strategy 3: balanced braces — tìm `{` đầu, đếm depth tới `}` match
+        start = text.find("{")
+        if start >= 0:
+            depth = 0
+            for i in range(start, len(text)):
+                ch = text[i]
+                if ch == "{":
+                    depth += 1
+                elif ch == "}":
+                    depth -= 1
+                    if depth == 0:
+                        candidate = text[start:i + 1]
+                        try:
+                            return json.loads(candidate)
+                        except json.JSONDecodeError:
+                            break
+
+        # Strategy 4: legacy greedy fallback
+        m = re.search(r"\{.*\}", text, re.DOTALL)
+        if m:
+            return json.loads(m.group(0))
+
+        raise ValueError(f"Router output no JSON: {raw[:200]}")
