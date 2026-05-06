@@ -66,7 +66,7 @@ def _write_brain_hub(
     for d in dept_dirs:
         meta = _read_dept_meta(d)
         label = meta.get("name_vn", d.name) if meta else d.name
-        lines.append(f"- [[01-Departments/{d.name}/index|{d.name} — {label}]]")
+        lines.append(f"- [[01-Departments/{d.name}/index|🏢 {label} ({d.name})]]")
     target.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return True
 
@@ -80,7 +80,8 @@ def _write_dept_hub(d: Path, meta: dict, brain_stems: list[str]) -> bool:
     depends_on = meta.get("depends_on", []) or []
 
     lines = [
-        f"# {d.name} — {name_vn}",
+        f"# 🏢 {name_vn}",
+        f"_Mã phòng ban: `{d.name}`_",
         "",
         "← [[../../00-Brain/index|🧠 Brain Hub]]",
         "",
@@ -114,7 +115,7 @@ def _link_agents(d: Path, meta: dict, brain_stems: list[str]) -> int:
             "",
             LINK_MARKER,
             "",
-            f"- Phòng ban: [[../index|{d.name} — {name_vn}]]",
+            f"- Phòng ban: [[../index|🏢 {name_vn}]]",
             "- Brain Hub: [[../../../00-Brain/index|🧠 Brain]]",
         ]
         if key_refs:

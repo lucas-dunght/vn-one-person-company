@@ -40,7 +40,7 @@ def test_onboard_appends_wikilinks_to_agent_files(tmp_path):
     agent = vault / "01-Departments" / "01-governance" / "agents" / "legal-officer.md"
     text = agent.read_text(encoding="utf-8")
     assert LINK_MARKER in text
-    assert "[[../index|" in text
+    assert "[[../index|🏢" in text
     assert "[[../../../00-Brain/index" in text
 
 
