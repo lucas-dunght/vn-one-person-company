@@ -7,12 +7,13 @@ Run:
     python -m core.mcp_server          # stdio transport
     vn-os-mcp                          # via console_script (after install)
 
-Tools registered (8):
+Tools registered (9):
     vn_run         — Stage 1: brief → router → gap → clarify (PAUSE)
     vn_resume      — Stage 2: resume after CEO answers clarification
     vn_meeting     — Stage 3: research + meeting → 07-decision-report.md (Stop 1)
     vn_approve     — Stage 4: CEO approves → 08-execution-plan.md (Stop 2)
     vn_execute     — Stage 5: render .docx/.xlsx into 03-Outputs/
+    vn_draft       — Single LLM call cho boilerplate (HĐLĐ, JD, nội quy...) — fast path
     vn_status      — inspect vault (Brain summary + tasks)
     vn_onboard     — run onboard wizard creating new vault scaffold
     vn_upgrade     — refresh existing vault với enriched prompts + aliases
@@ -150,6 +151,43 @@ def vn_execute(task_folder: str, ctx: Context) -> dict:
         "task_folder": str(result.task_folder),
         "message": result.message,
     }
+
+
+@mcp.tool()
+def vn_draft(
+    brief: str,
+    vault: str,
+    ctx: Context,
+    doc_type: str = "tài liệu",
+) -> dict:
+    """Fast path: soạn 1 tài liệu boilerplate qua 1 LLM call (không debate).
+
+    Dùng cho: HĐLĐ, JD, nội quy, phiếu thu, SOP đơn giản, thư mời họp...
+    KHÔNG dùng cho: quyết định chiến lược, doc rủi ro pháp lý cao.
+
+    Trade-off: nhanh (~10-30s thay vì 1-3 phút của vn_run+vn_meeting)
+    nhưng KHÔNG qua multi-perspective review.
+
+    Args:
+        brief: Yêu cầu cụ thể (vd "HĐLĐ trợ lý kế toán cafe Sao Việt, lương 10tr").
+        vault: Vault path.
+        doc_type: Loại doc (vd "hợp đồng lao động", "JD", "nội quy", "phiếu thu").
+
+    Returns dict {task_folder, draft_path, message}.
+    """
+    from core.orchestrator.draft import draft_document
+    from core.utils.config import apply_vault_env_to_os
+
+    vault_path = Path(vault)
+    apply_vault_env_to_os(vault_path)
+
+    llm = MCPSamplingProvider(ctx.session)
+    return draft_document(
+        brief=brief,
+        vault_root=vault_path,
+        llm=llm,
+        doc_type=doc_type,
+    )
 
 
 @mcp.tool()

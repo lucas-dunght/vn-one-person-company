@@ -65,6 +65,57 @@ MCP context không được inject. Tools đang chạy ngoài MCP session (vd qu
 ### `vn_onboard` timeout (~4 phút)
 Đã fix bằng cách bỏ subprocess (commit `ad21206`). Cập nhật repo + restart Claude Desktop.
 
+### `vn_run` / `vn_meeting` timeout
+
+**Triệu chứng:** Tool báo timeout sau ~60s, dù việc chưa xong.
+
+**Nguyên nhân:** Mỗi step của `vn_run` (router → gap → clarify) và `vn_meeting`
+(research + perspectives × N depts + Pro/Con × M rounds + synthesizer) là 1 LLM
+call qua MCP sampling. Tổng round-trip qua Claude Desktop dễ vượt timeout client
+mặc định (~60s) khi config nhiều rounds.
+
+**Cách khắc phục (theo ưu tiên):**
+
+#### 1. Dùng `vn_draft` cho doc boilerplate
+HĐLĐ, JD, nội quy, phiếu thu, SOP đơn giản → KHÔNG cần debate engine.
+Chỉ 1 LLM call, chạy ~10–30s, không bao giờ timeout.
+
+```
+Soạn HĐLĐ trợ lý kế toán cho cafe Sao Việt, lương 10tr, thử việc 2 tháng,
+yêu cầu biết MISA và Thông tư 200/2014. Vault: F:\work\xyz-vault.
+```
+
+(Claude Desktop sẽ chọn `vn_draft` thay vì `vn_run` nếu prompt rõ ràng là soạn
+tài liệu cụ thể. Không thì gọi explicit: "Dùng vn_draft soạn ...")
+
+#### 2. Giảm rounds trong `.vncoderc`
+Default mới (v0.1.0+) đã lite — `0/1/3`. Nếu vẫn chậm, hạ tiếp:
+```yaml
+meeting:
+  max_perspective_rounds: 0      # Bỏ Round 3 perspective debate
+  max_debate_rounds: 1           # 1 round Pro/Con (không phải 2)
+  total_max: 2                   # Hard cap
+```
+→ Tổng ~2-3 LLM calls/meeting thay vì 5-10.
+
+#### 3. Tăng MCP client timeout (Claude Desktop)
+Edit `claude_desktop_config.json`:
+```json
+"vn-business-os": {
+  "command": "vn-os-mcp",
+  "env": {"TAVILY_API_KEY": "..."},
+  "timeout": 300000
+}
+```
+Restart Claude Desktop. Tăng timeout lên 5 phút cho meeting nặng.
+
+#### 4. Khi nào đáng dùng `vn_run`/`vn_meeting`
+- Quyết định chiến lược: mở chi nhánh, đổi giá, tuyển senior, M&A
+- Có rủi ro pháp lý/tài chính lớn
+- Cần multi-perspective review + citation validation
+
+Boilerplate doc → luôn `vn_draft`.
+
 ### Vault path có dấu cách / Unicode
 Plugin support nhưng nên tránh. Khuyến nghị:
 - ✓ `F:/work/xyz-vault`

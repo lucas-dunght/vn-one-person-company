@@ -114,6 +114,17 @@ Plugin:
 
 ## Tools chỉ dùng khi cần
 
+### `vn_draft` — fast path cho doc boilerplate
+Soạn 1 tài liệu qua 1 LLM call (~10-30s), KHÔNG qua debate engine.
+
+**Use case:** HĐLĐ, JD, nội quy, phiếu thu, SOP đơn giản, thư mời họp...
+```
+Soạn HĐLĐ trợ lý kế toán cho cafe Sao Việt, lương 10tr, thử việc 2 tháng.
+```
+Output: `<vault>/02-Tasks/<ts>-draft-<slug>/draft.md`
+
+**KHÔNG dùng** cho quyết định chiến lược / có rủi ro pháp lý lớn → dùng `vn_run` + `vn_meeting`.
+
 ### `vn_status`
 Inspect vault state — Brain summary + active phòng + tasks + tool availability.
 ```

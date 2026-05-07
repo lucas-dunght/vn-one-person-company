@@ -8,13 +8,13 @@ from pydantic import BaseModel, Field
 
 
 class MeetingConfig(BaseModel):
-    max_perspective_rounds: int = 1
-    max_debate_rounds: int = 2
+    # Defaults tuned cho MCP sampling latency: mỗi LLM call ~10-30s qua Claude Desktop.
+    # Lite defaults (0/1/3) chạy ~1-2 phút, vừa đủ cho hầu hết quyết định vận hành.
+    # CEO opt-in deeper debate qua .vncoderc khi cần (2/3/5 cũ → strategic decisions).
+    max_perspective_rounds: int = 0
+    max_debate_rounds: int = 1
     max_perspective_debate_rounds: int = 1
-    total_max: int = 5
-    # P1.4: opt-in LangGraph checkpointer cho crash recovery mid-meeting.
-    # Default OFF vì SqliteSaver có incompatibilities với một số versions.
-    # Khi enable, checkpoints lưu vào ~/.vn-business-os/checkpoints.db.
+    total_max: int = 3
     use_checkpointer: bool = False
 
 

@@ -41,7 +41,8 @@ class TestTranslatorModeConfig:
 
     def test_other_config_fields_unaffected(self):
         cfg = Config(translator_mode="off")
-        assert cfg.meeting.max_debate_rounds == 2
+        # Lite defaults v0.1.0+ (giảm timeout risk qua MCP sampling)
+        assert cfg.meeting.max_debate_rounds == 1
         assert cfg.llm.primary == "claude-sonnet-4-6"
 
 

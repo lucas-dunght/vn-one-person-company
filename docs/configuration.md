@@ -40,13 +40,13 @@ version: "0.1.0"
 # all_intermediate → Mọi output: perspectives, debate, final
 translator_mode: final_only
 
-# Meeting config
+# Meeting config — default LITE để tránh MCP timeout (v0.1.0+)
 meeting:
-  max_perspective_rounds: 1      # Số round Growth/Cautious/Balanced (default 1)
-  max_debate_rounds: 2           # Số round Pro/Con (default 2)
+  max_perspective_rounds: 0      # Round 3 perspective debate (default 0 = skip)
+  max_debate_rounds: 1           # Số round Pro/Con (default 1, tăng lên 2-3 cho strategic)
   max_perspective_debate_rounds: 1
-  total_max: 5                   # Hard limit total LLM calls / meeting
-  use_checkpointer: false        # P1.4 — opt-in crash recovery (LangGraph SqliteSaver)
+  total_max: 3                   # Hard limit total LLM calls / meeting
+  use_checkpointer: false        # opt-in crash recovery (LangGraph SqliteSaver)
 
 # LLM config (chỉ dùng nếu KHÔNG qua MCP sampling)
 llm:
@@ -62,8 +62,13 @@ llm:
 - **Không bao giờ** edit `vault_path`, `packs`, `version` — auto bởi vn_onboard
 - Thường edit:
   - `translator_mode: all_intermediate` nếu CEO không có team đỡ đọc tech jargon
-  - `meeting.max_debate_rounds: 3` nếu muốn debate sâu hơn (cost +50%)
+  - `meeting.max_debate_rounds: 2-3` cho quyết định chiến lược (đánh đổi: +50% cost, +1-2 phút latency, rủi ro MCP timeout)
+  - `meeting.max_perspective_rounds: 1` nếu muốn Round 3 perspective debate
   - `meeting.use_checkpointer: true` nếu cần crash recovery (advanced)
+
+> **Khuyến nghị:** Giữ defaults lite (`0/1/3`) cho tasks vận hành. Bump rounds chỉ khi
+> chạy quyết định chiến lược lớn, và tăng MCP client timeout song song
+> (xem [troubleshooting.md](troubleshooting.md#vn_run--vn_meeting-timeout)).
 
 ---
 
