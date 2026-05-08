@@ -118,3 +118,69 @@ def test_install_no_vault_no_env_field(tmp_path):
     server = config["mcpServers"]["vn-business-os"]
     assert "env" not in server
     assert result["env_keys_injected"] == []
+
+
+from core.install_mcp import get_claude_code_config_path, install_for_target
+
+
+def test_get_claude_code_config_path_returns_dot_claude_json():
+    p = get_claude_code_config_path()
+    assert p.name == ".claude.json"
+    assert p.parent == Path.home()
+
+
+def test_install_for_target_desktop_only(tmp_path, monkeypatch):
+    desktop_cfg = tmp_path / "claude_desktop_config.json"
+    cc_cfg = tmp_path / "dot_claude.json"
+    monkeypatch.setattr("core.install_mcp.get_config_path", lambda: desktop_cfg)
+    monkeypatch.setattr("core.install_mcp.get_claude_code_config_path", lambda: cc_cfg)
+
+    results = install_for_target("desktop", vault_path=None)
+
+    assert results["desktop"]["ok"] is True
+    assert desktop_cfg.exists()
+    assert not cc_cfg.exists()
+
+
+def test_install_for_target_claude_code_only(tmp_path, monkeypatch):
+    desktop_cfg = tmp_path / "claude_desktop_config.json"
+    cc_cfg = tmp_path / "dot_claude.json"
+    monkeypatch.setattr("core.install_mcp.get_config_path", lambda: desktop_cfg)
+    monkeypatch.setattr("core.install_mcp.get_claude_code_config_path", lambda: cc_cfg)
+
+    results = install_for_target("claude-code", vault_path=None)
+
+    assert results["claude-code"]["ok"] is True
+    assert cc_cfg.exists()
+    assert not desktop_cfg.exists()
+
+
+def test_install_for_target_both(tmp_path, monkeypatch):
+    desktop_cfg = tmp_path / "claude_desktop_config.json"
+    cc_cfg = tmp_path / "dot_claude.json"
+    monkeypatch.setattr("core.install_mcp.get_config_path", lambda: desktop_cfg)
+    monkeypatch.setattr("core.install_mcp.get_claude_code_config_path", lambda: cc_cfg)
+
+    results = install_for_target("both", vault_path=None)
+
+    assert results["desktop"]["ok"] is True
+    assert results["claude-code"]["ok"] is True
+    assert desktop_cfg.exists()
+    assert cc_cfg.exists()
+
+
+def test_install_for_target_claude_code_preserves_existing_keys(tmp_path, monkeypatch):
+    cc_cfg = tmp_path / "dot_claude.json"
+    cc_cfg.write_text(json.dumps({"theme": "dark", "mcpServers": {}}), encoding="utf-8")
+    monkeypatch.setattr("core.install_mcp.get_claude_code_config_path", lambda: cc_cfg)
+
+    install_for_target("claude-code", vault_path=None)
+
+    config = json.loads(cc_cfg.read_text(encoding="utf-8"))
+    assert config["theme"] == "dark"
+    assert "vn-business-os" in config["mcpServers"]
+
+
+def test_install_for_target_invalid_target_raises():
+    with pytest.raises(ValueError, match="target must be"):
+        install_for_target("invalid", vault_path=None)

@@ -41,6 +41,38 @@ def get_server_command() -> tuple[str, list[str]]:
     return sys.executable, ["-m", "core.mcp_server"]
 
 
+def get_claude_code_config_path() -> Path:
+    """Return ~/.claude.json — global Claude Code MCP config (cross-platform)."""
+    return Path.home() / ".claude.json"
+
+
+def install_for_target(
+    target: str = "both",
+    vault_path: Optional[Path] = None,
+) -> dict:
+    """Install MCP server for target: 'desktop', 'claude-code', or 'both'.
+
+    Returns dict with target name as key, install() result as value.
+    Raises ValueError if target is invalid.
+    """
+    valid = {"desktop", "claude-code", "both"}
+    if target not in valid:
+        raise ValueError(f"target must be one of {valid}, got {target!r}")
+
+    results: dict = {}
+    if target in ("desktop", "both"):
+        results["desktop"] = install(
+            config_path=get_config_path(),
+            vault_path=vault_path,
+        )
+    if target in ("claude-code", "both"):
+        results["claude-code"] = install(
+            config_path=get_claude_code_config_path(),
+            vault_path=vault_path,
+        )
+    return results
+
+
 def install(
     config_path: Optional[Path] = None,
     server_name: str = "vn-business-os",
