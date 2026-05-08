@@ -214,14 +214,30 @@ def install_mcp_cmd(vault, target):
 
 
 @main.command(name="uninstall-mcp")
-def uninstall_mcp_cmd():
-    """Remove vn-business-os MCP server from Claude Desktop config."""
-    from core.install_mcp import uninstall
-    result = uninstall()
-    if result.get("removed"):
-        console.print(f"[green]✓ Removed MCP server entry from {result['config_path']}[/]")
-    else:
-        console.print(f"[yellow]→ Nothing to remove ({result.get('reason', 'unknown')})[/]")
+@click.option(
+    "--target",
+    type=click.Choice(["desktop", "claude-code", "both"], case_sensitive=False),
+    default="both",
+    show_default=True,
+    help="Host từ đó gỡ MCP server",
+)
+def uninstall_mcp_cmd(target):
+    """Remove vn-business-os MCP server entry from config(s)."""
+    from core.install_mcp import uninstall, get_config_path, get_claude_code_config_path
+
+    targets = []
+    if target in ("desktop", "both"):
+        targets.append(("desktop", get_config_path()))
+    if target in ("claude-code", "both"):
+        targets.append(("claude-code", get_claude_code_config_path()))
+
+    for host, cfg_path in targets:
+        label = "Claude Desktop" if host == "desktop" else "Claude Code"
+        result = uninstall(config_path=cfg_path)
+        if result.get("removed"):
+            console.print(f"[green]✓ {label}:[/] removed from {result['config_path']}")
+        else:
+            console.print(f"[yellow]→ {label}:[/] nothing to remove ({result.get('reason', 'unknown')})")
 
 
 if __name__ == "__main__":

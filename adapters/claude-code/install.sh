@@ -19,5 +19,4 @@ else
 fi
 
 echo ""
-echo "Bước tiếp: restart Claude Code để load MCP server."
 echo "Rồi gõ brief tiếng Việt trong Claude Code — skill tự kích hoạt."

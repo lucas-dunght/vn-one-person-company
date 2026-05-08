@@ -107,11 +107,12 @@ def install(
     else:
         config = {}
 
-    # Backup existing config
+    # Backup existing config (only first time — preserves original state)
     backup = None
     if cfg_path.exists():
         backup = cfg_path.with_suffix(".json.bak")
-        shutil.copy(cfg_path, backup)
+        if not backup.exists():
+            shutil.copy(cfg_path, backup)
 
     # Build server entry
     command, args = get_server_command()
