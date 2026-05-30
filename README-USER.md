@@ -29,15 +29,19 @@ Sau khi cài đặt xong (~45 phút), bạn có thể chat với Claude và ra l
 - [ ] Internet ổn định
 
 ### Tài khoản (đăng ký miễn phí)
-- [ ] Tài khoản **Anthropic Claude Pro** (~480k VNĐ/tháng — bạn có thể đã có nếu đang dùng Claude Cowork)
+- [ ] Tài khoản **Anthropic Claude Pro** (~480k VNĐ/tháng) — đăng ký tại https://claude.ai
 - [ ] Tài khoản **DeepSeek** (free, có $5 credit khi đăng ký mới — đủ chạy hàng trăm task)
-- [ ] *Tùy chọn*: tài khoản **Tavily** (free tier 1000 lượt search/tháng — cần nếu muốn AI tự tra cứu luật/đối thủ trên web)
+- [ ] **Tavily** (free tier 1000 lượt search/tháng — KHUYẾN NGHỊ, để AI tự tra cứu luật/đối thủ trên web)
 
 ### Phần mềm sẽ cài (trong hướng dẫn)
 - Python 3.11+
 - Node.js 18+
-- Obsidian (ghi chú + lưu trữ)
-- Claude Desktop (chat với AI)
+- Obsidian (ghi chú + lưu trữ — "bộ nhớ" của DN)
+- Claude Desktop (chat với AI — sẽ dùng tab **"</> Code"** bên trong)
+
+> 🎯 **Lưu ý quan trọng:** Claude Desktop có 3 tab: **Chat** | **Cowork** | **</> Code**.
+> Hệ thống VN OS được thiết kế chạy trong tab **Code** (timeout 10 phút, gọi được mọi tool MCP).
+> Tab Cowork (timeout 60s) chỉ chạy được task nhẹ. Tab Chat không có MCP.
 
 > 💡 **Đừng lo nếu chưa biết các phần mềm này là gì.** Mỗi bước hướng dẫn có link tải + thao tác cụ thể.
 
@@ -182,16 +186,31 @@ Obsidian là phần mềm ghi chú. Hệ thống dùng Obsidian làm "bộ nhớ
      ```
      (Trả lời `Y` khi hỏi). Sau đó chạy lại lệnh activate.
    - Khi thành công, dòng prompt sẽ có `(.venv)` ở đầu.
-5. Cài thư viện:
+5. **(Quan trọng nếu bạn từng cài bản cũ)** Gỡ install cũ trước:
+   ```powershell
+   pip uninstall vn-business-os vn-one-person-company -y
+   ```
+   (Nếu báo "not found" — bỏ qua, bạn chưa cài bản nào.)
+
+6. Cài thư viện:
    ```powershell
    pip install -e .
    ```
    (Đợi 3-5 phút — sẽ thấy nhiều dòng cài đặt)
-6. Kiểm tra:
+
+7. Kiểm tra cài đặt:
    ```powershell
    vn-os --version
    ```
-   Phải hiện: `vn-os, version 0.1.0` (hoặc cao hơn).
+   Phải hiện: `vn-os, version 0.2.0` (hoặc cao hơn).
+
+8. **Verify install trỏ đúng folder repo** (tránh lỗi "sửa code không có hiệu lực" sau này):
+   ```powershell
+   python -c "import json; from pathlib import Path; p = Path([d for d in __import__('site').getsitepackages() + [__import__('site').getusersitepackages()] if (Path(d) / 'vn_one_person_company-0.2.0.dist-info').exists()][0]) / 'vn_one_person_company-0.2.0.dist-info' / 'direct_url.json'; print(json.loads(p.read_text())['url'])"
+   ```
+   Phải hiện: `file:///F:/.work/vn-one-person-company` (đường dẫn repo bạn vừa giải nén).
+
+   ❌ Nếu hiện đường khác (vd `file:///F:/OneDrive/.../vn-one-person-company`) → bạn còn install cũ. Quay lại bước 5, uninstall, install lại.
 
 ---
 
@@ -210,8 +229,24 @@ DeepSeek là dịch vụ AI giúp các phòng ban "suy nghĩ". Rẻ hơn Claude 
 
 > ⚠️ **Bảo mật:** Key này cho phép gọi DeepSeek tốn tiền. **Không chia sẻ.** Nếu lỡ lộ → quay lại trang API Keys → Delete key cũ → tạo key mới.
 
-> 💡 **Tùy chọn — đăng ký Tavily** (cho AI tự tra cứu web/luật):
-> Vào https://app.tavily.com → đăng ký free → vào Settings → API Keys → tạo key. Có dạng `tvly-xxxxx`.
+> 💰 **Chi phí thực tế:** $5 free credit của DeepSeek đủ chạy ~200-300 task. Sau đó nạp thêm khoảng $5-10/tháng cho usage trung bình của 1 DN.
+
+---
+
+### Bước 6.5: Đăng ký Tavily (khuyến nghị — 3 phút)
+
+Tavily là search engine để các phòng ban tra cứu **luật mới**, **đối thủ**, **dữ liệu địa phương** thật trên web. **Không có Tavily** → decision report vẫn ra nhưng chỉ dựa Brain + kiến thức training của LLM (có thể outdated).
+
+**Thao tác:**
+
+1. Vào https://app.tavily.com → click **"Sign up"** (đăng ký free bằng email/Google)
+2. Sau khi login → bên trái chọn **"API Keys"**
+3. Click **"Generate API Key"** → đặt tên vd `vn-business-os`
+4. Copy key (dạng `tvly-xxxxxxxxxxxxxxxxxxxxxxxxx`) → dán vào `F:\setup-keys.txt` cùng các key khác
+
+**Free tier:** 1000 lượt search/tháng. Đủ cho 1 DN dùng full pipeline ~50-80 task/tháng (mỗi task tốn 5-15 search).
+
+> 💡 **Có thể skip nếu chỉ muốn test nhanh.** Bạn vẫn chạy được toàn bộ pipeline nhưng 4 tool research (`web_search`, `vn_law_search`, `vn_local_regulation`, `competitor_research`) sẽ bị skip. Có thể add key sau bất cứ lúc nào → sửa `.env` → restart Claude Desktop.
 
 ---
 
@@ -220,6 +255,8 @@ DeepSeek là dịch vụ AI giúp các phòng ban "suy nghĩ". Rẻ hơn Claude 
 Đây là 2 file nhỏ để hệ thống biết DN của bạn ở đâu + dùng AI nào.
 
 **7.1 — File `.env` trong vault:**
+
+> 🚨 **CỰC KỲ QUAN TRỌNG:** `DEEPSEEK_API_KEY` là LLM provider chính. Thiếu → mọi task `vn_draft`/`vn_run`/`vn_meeting` sẽ báo lỗi `Method not found` (vì code fallback đến MCP sampling mà Claude Code tab không support).
 
 Trong PowerShell, gõ (đổi `Sao Việt` thành tên vault của bạn):
 
@@ -231,14 +268,22 @@ Notepad sẽ mở file rỗng. Paste nội dung sau:
 
 ```
 DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxx
-TAVILY_API_KEY=
+TAVILY_API_KEY=tvly-xxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-→ Thay `sk-xxxxxxxxxxxxxxxxxxxxx` bằng key DeepSeek thật của bạn (lấy từ `F:\setup-keys.txt`).
+→ Thay 2 key bằng key thật của bạn (lấy từ `F:\setup-keys.txt`).
 
-→ Nếu có Tavily key, dán sau dấu `=` thứ 2. Nếu không → để trống.
+→ Nếu chưa có Tavily key → để trống sau dấu `=` (vẫn chạy được, chỉ skip 4 tool research).
 
 → **Save** (Ctrl+S) → **Close**
+
+**Verify .env load đúng:**
+
+```powershell
+Get-Content "F:\vaults\Sao Việt\.env"
+```
+
+→ Phải thấy 2 dòng key (không bị BOM, không thừa khoảng trắng).
 
 **7.2 — File `.vncoderc` trong home folder:**
 
@@ -268,10 +313,18 @@ Nhấn Enter. Không có output gì — vậy là xong.
 
 Claude Desktop là app chat với AI — nơi bạn ra lệnh "soạn HD lao động", "phân tích chi nhánh"...
 
+> 🎯 **QUAN TRỌNG — Dùng tab "Code", không dùng tab "Chat" hay "Cowork".**
+> Claude Desktop có 3 tab: **Chat** | **Cowork** | **</> Code** (góc trên bên phải).
+> - **Code tab** = Claude Code, timeout 10 phút, gọi được **mọi MCP tool** (kể cả debate đa phòng kéo dài 2-3 phút).
+> - **Cowork tab** = timeout 60 giây — chỉ gọi được tool nhẹ (vn_status, đọc/sửa file). Task nặng (soạn doc, debate) sẽ **fail**.
+>
+> → **Sau khi cài xong, luôn click tab "</> Code" trước khi chat.**
+
 **8.1 — Cài Claude Desktop:**
 
 1. Vào https://claude.ai/download → tải Claude Desktop cho Windows
 2. Cài đặt → Login bằng tài khoản Claude Pro của bạn
+3. Mở Claude Desktop → **click tab "</> Code"** ở góc trên bên phải (cạnh Chat / Cowork)
 
 **8.2 — Cài MCP Obsidian (kết nối Claude với vault Obsidian):**
 
@@ -316,19 +369,43 @@ Notepad sẽ mở file `claude_desktop_config.json`. **Thay toàn bộ nội dun
 
 → Save (Ctrl+S) → Close
 
-**8.3 — Restart Claude Desktop:**
+**8.3 — Restart Claude Desktop ĐÚNG CÁCH:**
 
-1. Đóng hoàn toàn Claude Desktop (right-click icon ở taskbar → Quit)
-2. Mở lại Claude Desktop
+> ⚠️ **CẢNH BÁO LỚN:** Click nút X (đóng cửa sổ) **KHÔNG quit** Claude Desktop — chỉ minimize xuống **system tray** (góc dưới phải màn hình). MCP server cũ vẫn chạy ngầm → mọi sửa code/config đều không có hiệu lực.
+
+**Cách Quit chuẩn:**
+
+1. Nhìn **góc dưới phải màn hình**, gần đồng hồ
+2. Click mũi tên `^` "Show hidden icons" (nếu cần)
+3. Tìm icon **Claude** (hình bông hoa cam)
+4. **Right-click** icon Claude → chọn **"Quit"** (KHÔNG phải Close)
+
+**Verify đã Quit hết (PowerShell):**
+
+```powershell
+Get-Process claude, vn-os-mcp -ErrorAction SilentlyContinue | Measure-Object | Select-Object -ExpandProperty Count
+```
+
+→ Phải in ra `0`. Nếu > 0 → còn process. Force kill:
+```powershell
+Get-Process claude, vn-os-mcp -ErrorAction SilentlyContinue | Stop-Process -Force
+```
+
+**Mở lại Claude Desktop:**
+
+1. Mở Claude Desktop từ Start Menu
+2. **Click tab "</> Code"** ở góc trên bên phải (cạnh Chat / Cowork)
 3. **Quan trọng:** Obsidian app cũng phải đang chạy (vault Sao Việt đang mở). Nếu chưa → mở Obsidian.
 
 ---
 
 ### Bước 9: Verify mọi thứ chạy được (3 phút)
 
+> Mở Claude Desktop → **click tab "</> Code"** → **"+ New session"** ở sidebar trái → cửa sổ chat mới hiện ra.
+
 **9.1 — Test MCP Obsidian:**
 
-Trong Claude Desktop chat (cửa sổ mới), gõ:
+Trong Claude Code session, gõ:
 
 ```
 Liệt kê các file trong vault Obsidian của tôi
@@ -340,7 +417,7 @@ Liệt kê các file trong vault Obsidian của tôi
 
 **9.2 — Test MCP vn-business-os:**
 
-Trong Claude Desktop chat, gõ:
+Trong Claude Code session, gõ:
 
 ```
 Chạy vn_status với vault F:\vaults\Sao Việt
@@ -362,8 +439,10 @@ Tới đây bạn đã có:
 | Obsidian + plugin Local REST API | ✅ |
 | Repo vn-business-os + thư viện Python | ✅ |
 | DeepSeek API key trong `.env` | ✅ |
+| Tavily API key trong `.env` (khuyến nghị) | ✅ |
 | Config `.vncoderc` cho model | ✅ |
 | Claude Desktop + 2 MCP servers | ✅ |
+| Đã biết dùng tab **"</> Code"** trong Claude Desktop | ✅ |
 
 **Bước tiếp theo:** Phần 2 — Khởi tạo doanh nghiệp (tạo Brain + áp pack ngành).
 
@@ -393,7 +472,7 @@ F:\vaults\<Tên DN>\
 
 **Cách 1 — Tự động (khuyến nghị):**
 
-Trong **Claude Desktop chat** (sau khi đã setup MCP ở Bước 8), gõ:
+Trong **Claude Code session** (tab "</> Code" của Claude Desktop, sau khi đã setup MCP ở Bước 8), gõ:
 
 ```
 Khởi tạo cấu trúc vault VN Business OS tại F:\vaults\<TênDN>.
@@ -484,9 +563,11 @@ Folder `01-Departments/` giờ có 13-15 sub-folder (13 core + 2-3 từ pack).
 | `decisions-log.md` | Nhật ký quyết định lớn (sẽ tự sinh khi dùng) | 🟢 Tự sinh |
 | `glossary.md` | Từ điển thuật ngữ DN | 🟢 Tự sinh |
 
-> 💡 **Cách làm:** Bạn tự đọc 16 câu hỏi dưới đây + tự gõ câu trả lời vào file Brain trong Obsidian. Quy trình thủ công nhưng **an toàn 100%** — không phụ thuộc AI tool.
+> 💡 **Cách làm:** Bạn tự đọc 16 câu hỏi dưới đây + tự gõ câu trả lời vào file Brain trong Obsidian. Quy trình thủ công nhưng **an toàn 100%** — bạn kiểm soát chính xác mọi thông tin DN của mình.
 >
-> *Tại sao không nhờ Claude tự fill?* — Vì việc ghi 8 file qua AI có thể bị timeout (giới hạn kỹ thuật 60s mỗi lượt). Tự fill nhanh + chắc chắn hơn.
+> *Tại sao không nhờ Claude tự fill?* — Brain là nền tảng AI dựa vào để ra mọi quyết định sau này. Tự fill đảm bảo data đúng 100% + bạn hiểu rõ hệ thống đang biết gì về DN.
+>
+> *Mẹo nhanh:* nếu lười, sau khi đọc xong 16 câu hỏi, bạn có thể chat với Claude Code: "Đây là câu trả lời của tôi: [paste 16 câu]. Generate giúp 8 file Brain theo format trong README-USER.md Bước 12.2, dùng obsidian_patch_content ghi vào vault."
 
 **Bước 12.1 — Trả lời 16 câu hỏi (chuẩn bị nội dung)**
 
@@ -783,7 +864,7 @@ Nếu Obsidian có config "Auto-save" (mặc định bật) → file tự save k
 
 ### Bước 13: Verify Brain đã đầy đủ (2 phút)
 
-Trong **Claude Desktop chat**, gõ:
+Trong **Claude Code session**, gõ:
 
 ```
 Chạy vn_status với vault F:\vaults\Sao Việt
@@ -834,171 +915,108 @@ Tới đây bạn có:
 
 ---
 
-### 📌 Quy tắc vàng — Phân loại task trước khi giao
+### 📌 Quy tắc duy nhất — Luôn dùng tab Code
 
-Hệ thống có **2 môi trường** để chạy task:
+Mở Claude Desktop → click **"</> Code"** ở góc trên bên phải → **"+ New session"**.
 
-1. **Claude Desktop chat** (Cowork) — bạn chat với Claude trực tiếp
-2. **PowerShell** (cửa sổ đen của Windows) — chạy lệnh `vn-os` trực tiếp
+Trong session Code tab:
+- ✅ Mọi MCP tool đều gọi được trực tiếp (timeout 10 phút)
+- ✅ Không cần phân biệt "task nhẹ" vs "task nặng"
+- ✅ Không cần mở PowerShell riêng
 
-Lý do **phải dùng cả 2**: Claude Desktop có giới hạn kỹ thuật **60 giây** cho mỗi tool call. Task nặng (cần AI suy nghĩ nhiều) sẽ vượt 60 giây → fail. PowerShell không có giới hạn này → task nặng phải chạy ở đó.
+> 🚫 **Đừng dùng tab Cowork để chạy task nặng** (vd "Soạn HĐLĐ", "Phân tích chi nhánh"). Cowork có timeout 60s → debate đa phòng (60-180s) sẽ fail. Để dành Cowork cho việc nhẹ như "tóm tắt vault" hoặc đọc/sửa file.
 
-**Bảng phân loại — học thuộc bảng này:**
+**Bảng minh hoạ — cùng 1 task, 2 tab khác nhau:**
 
-| Task của bạn | Môi trường | Lý do |
+| Task của bạn | Code tab | Cowork tab |
 |---|---|---|
-| "Tóm tắt vault, doanh nghiệp tôi đang ở giai đoạn nào?" | 🟢 **Cowork chat** | Chỉ đọc Brain, không LLM heavy |
-| "Mở file 07-decision-report.md task X cho tôi xem" | 🟢 **Cowork chat** | Đọc file qua Obsidian MCP |
-| "Sửa file budget.md, thêm khoản chi marketing 20tr" | 🟢 **Cowork chat** | Sửa file qua Obsidian MCP |
-| "Tư vấn xem có nên tăng giá menu không?" | 🟢 **Cowork chat** | Claude tư vấn dựa trên Brain — không cần gọi tool VN OS |
-| "Soạn JD barista cho tôi" | 🔴 **PowerShell** | 1+ LLM call → timeout |
-| "Soạn HD lao động store manager 13tr" | 🔴 **PowerShell** | 1+ LLM call → timeout |
-| "Brainstorm slogan + visual identity Sao Việt" | 🔴 **PowerShell** | Cần debate đa phòng → 7+ LLM calls |
-| "Phân tích nên mở chi nhánh 2 ở quận nào" | 🔴 **PowerShell** | Quyết định chiến lược → cần meeting |
-| "Lập kế hoạch chiến dịch QC Tết 50tr" | 🔴 **PowerShell** | Quyết định chiến lược → cần meeting |
-| "Render decision report task X ra file .docx" | 🟡 **Thử Cowork trước** | Render template, không LLM (trừ fallback). Nếu lỗi → PS. |
+| "Tóm tắt vault, DN tôi đang giai đoạn nào?" | ✅ OK | ✅ OK |
+| "Mở file decision-report.md task X" | ✅ OK | ✅ OK |
+| "Sửa file budget.md, thêm 20tr chi marketing" | ✅ OK | ✅ OK |
+| "Soạn JD barista" | ✅ OK (~30s) | ⚠️ Borderline |
+| "Soạn HĐLĐ store manager 13tr" | ✅ OK (~30s) | ⚠️ Borderline |
+| "Brainstorm slogan + visual identity" | ✅ OK (~3-5 phút) | ❌ Timeout |
+| "Phân tích nên mở chi nhánh 2 ở quận nào" | ✅ OK (~5-10 phút) | ❌ Timeout |
+| "Lập kế hoạch chiến dịch QC Tết 50tr" | ✅ OK (~5-10 phút) | ❌ Timeout |
 
-**Mẹo nhớ nhanh:**
-- 🟢 Nếu task của bạn **chỉ đọc/sửa file** (không cần AI sáng tạo nội dung mới) → **Cowork**
-- 🔴 Nếu task **cần AI tạo nội dung mới** (soạn doc, debate, brainstorm) → **PowerShell**
+→ **Mặc định dùng Code tab.** Cowork chỉ nên dùng khi đang đa nhiệm với Chat tab và task chắc chắn nhẹ.
 
 ---
 
-### 🟢 Workflow A — Task NHẸ (Cowork chat)
+### 🎬 Workflow chuẩn — 2 con đường
 
-Mở Claude Desktop → bắt đầu chat mới. Cứ chat tự nhiên như với 1 trợ lý hiểu rõ DN của bạn.
+Trong Code tab, bạn cứ chat tự nhiên. Claude tự phân loại task và chọn 1 trong 2 con đường:
 
-**Ví dụ 1 — Tóm tắt vault:**
+#### Đường A — Fast path (`vn_draft`) cho doc boilerplate
 
-> **Bạn:** Vault Sao Việt của tôi đang trạng thái như nào? Có task nào pending không?
+Áp dụng cho: HĐLĐ, JD, nội quy, phiếu thu, SOP đơn giản, thư mời họp...
 
-Claude tự gọi `vn_status`, đọc, trả lời:
-> Doanh nghiệp Sao Việt đang ở giai đoạn pre-seed (chưa khai trương). Bạn có 10 SKU sản phẩm, 13 phòng ban active. Các tools research (web/luật/đối thủ) đều sẵn sàng. Hiện có 14 task trong `02-Tasks/`, trong đó task `2026-05-08-1105-test-...` đã có decision report.
+**Bạn:**
+> Soạn JD nhân viên pha chế cho Sao Việt, lương 8tr/tháng, Q1 TPHCM.
 
-**Ví dụ 2 — Đọc decision report cũ:**
+**Claude:** (tự gọi `vn_draft`, ~10-30s)
+> Đã tạo draft tại `02-Tasks/2026-MM-DD-HHMM-jd-pha-che/draft.md`. Mở Obsidian xem. Tóm tắt: yêu cầu 6 tháng KN espresso, ca 8h x 6 ngày/tuần, BHXH theo Luật LĐ 2019...
 
-> **Bạn:** Mở file `02-Tasks/2026-05-08-1105-test-liet-ke-3-y-tuong-slogan/07-decision-report.md` cho tôi, tóm tắt 3 ý chính.
-
-Claude gọi `obsidian_get_file_contents`, đọc, tóm tắt:
-> Hệ thống đề xuất slogan **"Hạt Việt đậm. Gọn trong tay."** Lý do chính: (1) An toàn pháp lý (không cam kết "5 giây"), (2) dùng được cho cả 6 SKU cà phê, (3) khôn ngoan vì chưa cần cam kết loại hạt cụ thể. CEO cần chốt 4 việc trước khi in bảng hiệu...
-
-**Ví dụ 3 — Sửa file Brain:**
-
-> **Bạn:** Trong file 00-Brain/budget.md, đổi tổng ngân sách từ 1 tỷ thành 1.5 tỷ.
-
-Claude dùng `obsidian_patch_content`, sửa file → confirm: "Đã update file budget.md. Tổng ngân sách giờ là 1500000000 VND."
-
-**Ví dụ 4 — Tư vấn (không gọi tool):**
-
-> **Bạn:** Dựa trên Brain Sao Việt, theo bạn tôi nên focus mở chi nhánh 2 hay nâng cao chất lượng chi nhánh 1 trước?
-
-Claude đọc context từ chat trước (hoặc gọi `vn_status` để load Brain), trả lời tư vấn dựa trên data. Không cần gọi tool VN OS heavy.
+→ **1 lần gọi, ra ngay file.** Không qua debate, không có decision report. Phù hợp cho doc đã có template chuẩn.
 
 ---
 
-### 🔴 Workflow B — Task NẶNG (Hybrid Cowork + PowerShell)
+#### Đường B — Full pipeline 5 stage cho quyết định chiến lược
 
-Đây là **pattern chính** khi bạn cần soạn doc hoặc ra quyết định lớn.
+Áp dụng cho: quyết định lớn (mở chi nhánh, ngân sách quảng cáo, rebrand), doc rủi ro pháp lý cao, brainstorm cần đa góc nhìn.
 
-**4 bước chuẩn:**
+**5 stage tuần tự:**
 
-**Bước B1 — Trong Cowork chat, ra lệnh tự nhiên:**
+| # | Tool MCP | Output | Thời gian |
+|---|---|---|---|
+| 1 | `vn_run(brief, vault)` | `01-routing.md`, `02-context.md`, (có thể) `03-clarification.md` | 20-50s |
+| 2 | `vn_resume(task_folder)` (nếu cần) | `03-clarification-answered.md` | <10s |
+| 3 | `vn_meeting(task_folder)` | `04..06-meeting-*.md`, **`07-decision-report.md`** ← Stop 1 | 60-180s |
+| 4 | `vn_approve(task_folder)` | **`08-execution-plan.md`** ← Stop 2 | 10-30s |
+| 5 | `vn_execute(task_folder)` | File `.docx`/`.xlsx` trong `03-Outputs/<task>/` | 10-30s |
 
-> **Bạn:** Tôi muốn soạn HD lao động cho store manager Sao Việt, lương 13tr/tháng, yêu cầu 1 năm KN F&B + leadership tiềm năng.
+**Ví dụ thực tế:**
 
-**Bước B2 — Claude trả về command PowerShell:**
+**Bạn:**
+> Tôi muốn phân tích nên mở chi nhánh 2 Sao Việt ở Q1 hay Q3.
 
-Claude sẽ phân loại task → biết đây là task NẶNG → trả về command PowerShell sẵn sàng paste:
+**Claude:** (gọi `vn_run` ~30s)
+> Đã tạo task folder `02-Tasks/2026-MM-DD-HHMM-chi-nhanh-2/`. Có 5 câu clarification cần bạn trả lời trong `03-clarification.md` (mở Obsidian xem). Tôi đợi.
 
-> **Claude:** Task này cần debate đa phòng (Pháp lý + Nhân sự + Tài chính). Mình KHÔNG chạy được trong chat này (timeout 60s). Bạn copy command sau vào PowerShell:
+**Bạn:** (mở Obsidian, trả lời 5 câu, save Ctrl+S)
+> Xong rồi, tiếp đi.
+
+**Claude:** (gọi `vn_resume` → `vn_meeting` ~2-3 phút)
+> Decision report đã sinh tại `07-decision-report.md`. Tóm tắt: hệ thống khuyến nghị **Q3** với CAPEX 650tr, payback 18 tháng. Lý do chính: ... Có 3 cảnh báo: ...
 >
-> ```powershell
-> cd "F:\vaults\Sao Việt"
-> $vnos = "F:\.work\vn-one-person-company\.venv\Scripts\vn-os.exe"
->
-> # Stage 1: tạo task folder + phân loại
-> & $vnos run --vault . --brief "HD lao động store manager Sao Việt, lương 13tr/tháng, 1 năm KN F&B + leadership tiềm năng, quản lý team 5-7 người chi nhánh grab&go 50-80m2."
-> ```
->
-> Đợi ~30 giây. Sau khi return prompt, copy command tiếp theo.
->
-> Ước tính tổng thời gian: ~3-5 phút (qua đầy đủ pipeline).
-> Bạn cứ đi việc khác — vào Obsidian thấy folder mới trong `02-Tasks/`. Báo mình "xong" để mình check kết quả.
+> **Stop 1 — bạn duyệt:** mở `07-decision-report.md` đọc kỹ. Đồng ý → tôi chạy `vn_approve`. Muốn sửa → sửa thẳng file rồi báo tôi.
 
-**Bước B3 — User mở PowerShell, paste, đợi:**
+**Bạn:**
+> OK, approve đi.
 
-1. Mở PowerShell (Win+R → `powershell` → Enter) — **giữ cửa sổ này mở suốt session**
-2. Paste lệnh đầu tiên (`cd ...` + `$vnos = ...` + `& $vnos run ...`)
-3. Đợi 30s-1p → return prompt + in ra `task_folder` (vd `02-Tasks\2026-05-08-1230-...`)
-4. Quay lại Cowork chat, paste output cho Claude xem (hoặc báo "task folder: ...")
-5. Claude gửi command tiếp theo (`vn-os meeting`, rồi `vn-os approve`, rồi `vn-os execute`)
-6. Lặp đến khi xong
-
-**Bước B4 — Vào Obsidian xem kết quả:**
-
-Sau mỗi stage, file mới xuất hiện trong vault:
-
-| Stage | File mới | Bạn cần làm gì |
-|---|---|---|
-| `vn-os run` | `00-brief.md`, `01-routing.md`, `02-context.md`, có thể `03-clarification.md` | Nếu có `03-clarification.md` → mở, **trả lời câu hỏi**, save |
-| `vn-os resume` (nếu có clarification) | `03-clarification-answered.md` | (tự động) |
-| `vn-os meeting` | `03b-research-findings.md`, `04-meeting-r1-perspectives.md`, `05-meeting-r2-debate.md`, `06-meeting-r3-perspectives.md`, `07-decision-report.md` | **Mở `07-decision-report.md` đọc + duyệt** |
-| `vn-os approve` | `08-execution-plan.md` | Đọc plan, OK chưa? |
-| `vn-os execute` | `03-Outputs/<task>/<file>.docx` (hoặc .xlsx) | **Mở file .docx → đó là deliverable cuối cùng** |
+**Claude:** (gọi `vn_approve` ~30s → `vn_execute` ~15s)
+> Execution plan tại `08-execution-plan.md`. File `.docx` deliverable cuối cùng tại `03-Outputs/chi-nhanh-2/phan-tich-vi-tri.docx`. Mở xem.
 
 ---
 
-### 📋 Pipeline đầy đủ 5 stage — Khi nào cần dùng?
+### 🛑 Stop 1 + Stop 2 — Tại sao quan trọng
 
-| Loại task | Stage cần chạy | Thời gian ước |
+Hệ thống có **2 điểm dừng cố ý** để bạn (CEO) duyệt:
+
+- **Stop 1 — sau `vn_meeting`**: bạn xem `07-decision-report.md` trước khi approve. Đây là cơ hội **từ chối / sửa quyết định** trước khi hệ thống render docx.
+- **Stop 2 — sau `vn_approve`**: bạn xem `08-execution-plan.md` trước khi execute. Đây là cơ hội xem **plan triển khai chi tiết**, sửa trước khi tốn template render.
+
+→ **Đừng bỏ qua 2 điểm dừng này.** Nếu hệ thống đề xuất tệ → sửa thẳng file trong Obsidian, save, rồi báo Claude tiếp stage sau.
+
+**Files xuất hiện sau mỗi stage:**
+
+| Stage | File mới trong task folder | Bạn làm gì |
 |---|---|---|
-| **SIMPLE** (vd "soạn JD barista") | `run` → `meeting` → `approve` → `execute` | ~3-5 phút |
-| **COMPLEX cần clarification** (vd "lập kế hoạch QC Tết") | `run` → trả lời clarification → `resume` → `meeting` → `approve` → `execute` | ~5-10 phút |
-| **STRATEGIC** (vd "mở chi nhánh 2") | Same as COMPLEX nhưng meeting có nhiều rounds debate hơn | ~10-15 phút |
-
-**Pattern command đầy đủ (template, copy-paste):**
-
-```powershell
-# Setup 1 lần đầu mỗi cửa sổ PS:
-cd "F:\vaults\Sao Việt"
-$vnos = "F:\.work\vn-one-person-company\.venv\Scripts\vn-os.exe"
-
-# Stage 1 — Tạo task folder + phân loại + clarification (nếu cần)
-& $vnos run --vault . --brief "<brief của bạn ở đây>"
-# → return: task_folder = 02-Tasks\2026-MM-DD-HHMM-<slug>\
-#   stage = PAUSE_CLARIFICATION (nếu cần CEO trả lời) hoặc PAUSE_DECISION_REPORT (sẵn sàng meeting)
-
-# Nếu PAUSE_CLARIFICATION:
-#   1. Mở Obsidian → 02-Tasks\<folder>\03-clarification.md
-#   2. Đọc câu hỏi, viết câu trả lời ngay dưới mỗi câu, save (Ctrl+S)
-#   3. Quay lại PowerShell, chạy:
-& $vnos resume "02-Tasks\<task_folder>"
-
-# Stage 3 — Meeting (debate đa phòng → decision report)
-& $vnos meeting "02-Tasks\<task_folder>"
-# → return: PAUSE_DECISION_REPORT, file 07-decision-report.md đã được tạo
-
-# >>> CHECKPOINT: Mở 07-decision-report.md trong Obsidian, ĐỌC + REVIEW <<<
-# Nếu OK với khuyến nghị → tiếp Stage 4
-# Nếu muốn sửa → sửa thẳng file 07-decision-report.md trong Obsidian, save, rồi tiếp
-
-# Stage 4 — Approve → execution plan
-& $vnos approve "02-Tasks\<task_folder>"
-# → return: file 08-execution-plan.md đã được tạo
-
-# Stage 5 — Execute → render .docx/.xlsx
-& $vnos execute "02-Tasks\<task_folder>"
-# → return: DONE, file .docx/.xlsx trong vault\03-Outputs\<task>\
-```
-
-**Lưu ý quan trọng — Stop 1 + Stop 2:**
-
-Hệ thống có **2 điểm dừng cố ý** để CEO duyệt:
-
-- **Stop 1** — sau `meeting`: bạn xem `07-decision-report.md` trước khi approve. **Đây là cơ hội từ chối/sửa quyết định trước khi hệ thống render docx.**
-- **Stop 2** — sau `approve`: bạn xem `08-execution-plan.md` trước khi execute. **Đây là cơ hội xem plan triển khai chi tiết, từ chối/sửa trước khi tốn template render.**
-
-→ **Đừng bỏ qua 2 điểm dừng này.** Nếu hệ thống đề xuất tệ → sửa thẳng file `07-decision-report.md` hoặc `08-execution-plan.md` trong Obsidian, **rồi mới chạy stage tiếp theo**.
+| `vn_run` | `00-brief.md`, `01-routing.md`, `02-context.md`, có thể `03-clarification.md` | Nếu có `03-clarification.md` → mở, trả lời, save |
+| `vn_resume` | `03-clarification-answered.md` | (tự động) |
+| `vn_meeting` | `04..06-meeting-*.md`, `07-decision-report.md` | **Mở `07-decision-report.md` đọc + duyệt** |
+| `vn_approve` | `08-execution-plan.md` | Đọc plan, OK chưa? |
+| `vn_execute` | `03-Outputs/<task>/<file>.docx` | **Mở file .docx → deliverable cuối cùng** |
 
 ---
 
@@ -1057,90 +1075,357 @@ A. ...  B. ...  C. ...  D. ...
 
 ---
 
-### 💡 Tip: Setup PowerShell shortcut mở sẵn vault
+### ⏱️ Bảng thời gian ước tính (Claude Code tab)
 
-Để mỗi lần làm việc không phải gõ `cd` + `$vnos = ...`, tạo shortcut sẵn:
-
-**Tạo file `vn-os-shell.ps1` trong vault:**
-
-```powershell
-# Tạo file shortcut
-notepad "F:\vaults\Sao Việt\vn-os-shell.ps1"
-```
-
-Notepad mở → paste:
-
-```powershell
-# vn-os shell — auto-setup environment
-Set-Location "F:\vaults\Sao Việt"
-$global:vnos = "F:\.work\vn-one-person-company\.venv\Scripts\vn-os.exe"
-Write-Host "✓ Vault: $(Get-Location)" -ForegroundColor Green
-Write-Host "✓ vn-os: $vnos" -ForegroundColor Green
-Write-Host "Sẵn sàng. Dùng: & `$vnos run --vault . --brief `"...`""
-```
-
-Save → Close.
-
-**Tạo shortcut trên Desktop để click mở luôn:**
-
-1. Right-click Desktop → New → Shortcut
-2. Location: `powershell.exe -NoExit -File "F:\vaults\Sao Việt\vn-os-shell.ps1"`
-3. Name: **"VN OS - Sao Việt"**
-4. Click Finish
-
-Từ giờ click shortcut này → PowerShell mở sẵn ở vault, biến `$vnos` đã set, sẵn sàng paste lệnh `& $vnos run ...`.
-
----
-
-### ⏱️ Bảng thời gian ước tính
-
-| Tác vụ | Thời gian thực tế |
+| Tool | Thời gian thực tế |
 |---|---|
-| `vn_status` qua Cowork | < 1 giây |
-| Đọc/sửa file qua Obsidian MCP | 1-5 giây |
-| `vn-os run` (1 task SIMPLE) | 30-60 giây |
-| `vn-os run` (cần clarification) | 30-60 giây + thời gian bạn trả lời |
-| `vn-os meeting` (DeepSeek v4-pro thinking off) | 1-3 phút |
-| `vn-os meeting` (DeepSeek thinking on) | 5-10 phút *(không khuyến nghị)* |
-| `vn-os approve` | 30-60 giây |
-| `vn-os execute` (render docx) | 5-15 giây |
+| `vn_status` | < 1 giây |
+| Đọc/sửa file (obsidian_*) | 1-5 giây |
+| `vn_draft` | 10-30 giây |
+| `vn_run` (1 task SIMPLE) | 20-50 giây |
+| `vn_run` (cần clarification) | 20-50 giây + thời gian bạn trả lời |
+| `vn_resume` | <10 giây |
+| `vn_meeting` (DeepSeek v4-pro) | 1-3 phút |
+| `vn_approve` | 10-30 giây |
+| `vn_execute` (render docx) | 10-30 giây |
 | **Tổng pipeline 1 task SIMPLE** | **3-5 phút** |
-| **Tổng pipeline 1 task COMPLEX** | **5-10 phút** |
+| **Tổng pipeline 1 task có clarification** | **5-10 phút** |
 
-→ **Nếu chậm hơn benchmark này nhiều** (vd meeting > 10 phút) → có thể bị treo. Ctrl+C, kiểm tra Obsidian xem có file mới được tạo không, retry.
+→ **Nếu chậm hơn benchmark này nhiều** (vd meeting > 10 phút) → có thể bị treo. Trong session Code, gõ `/abort`, kiểm tra Obsidian xem file nào đã tạo, retry từ stage gần nhất.
 
 ---
 
 ### 🔄 Quy trình "Một ngày làm việc với VN OS"
 
-Đây là pattern bạn sẽ làm mỗi ngày khi đã quen:
+Đây là pattern bạn sẽ làm mỗi ngày khi đã quen — **tất cả trong 1 tab Code, không cần switch app.**
 
 **Sáng (5 phút):**
-1. Mở Claude Desktop chat mới
-2. Hỏi: "Vault có gì mới? KPI tuần này thế nào?"
-3. Claude tóm tắt → bạn biết focus hôm nay
+1. Mở Claude Desktop → tab Code → **+ New session**
+2. Gõ: "Vault Sao Việt có gì mới? KPI tuần này?"
+3. Claude tự gọi `vn_status` + list tasks → tóm tắt focus hôm nay
 
 **Khi có task lớn (3-10 phút):**
-1. Trong Cowork: ra lệnh "Soạn ..." / "Phân tích ..."
-2. Click shortcut "VN OS - Sao Việt" → PS mở
-3. Paste command Claude gửi
-4. Đợi (đi việc khác)
-5. Vào Obsidian review file kết quả
-6. Quay lại Cowork → "Xong, tóm tắt giúp tôi"
+1. Trong session Code đang mở, gõ tự nhiên: "Soạn HĐLĐ cho store manager 13tr"
+2. Claude tự chọn Fast path (`vn_draft`) hoặc Full pipeline (`vn_run → meeting → ...`)
+3. Đợi (đi việc khác — vẫn ở trong cùng 1 session, không cần PowerShell)
+4. Claude báo "xong" → mở Obsidian xem file deliverable
 
 **Cuối tuần (10 phút):**
-1. Trong Cowork: "Liệt kê các quyết định lớn tuần này từ 02-Tasks/"
-2. "Update file 00-Brain/decisions-log.md với 3 quyết định quan trọng nhất"
+1. Trong Code session: "Liệt kê quyết định lớn tuần này trong 02-Tasks/"
+2. "Update `00-Brain/decisions-log.md` với 3 quyết định quan trọng nhất"
 3. Claude tự sửa file qua Obsidian MCP
 
 ---
 
-## 🚧 Đang viết các phần tiếp theo
+## 🔧 PHẦN 4 — KHẮC PHỤC LỖI THƯỜNG GẶP
 
-- 🔧 PHẦN 4 — Khắc phục lỗi thường gặp (sắp có)
-- 💡 PHẦN 5 — Mẹo dùng tốt nhất (sắp có)
-- 🤝 PHẦN 6 — Dành cho dev (sắp có)
+### 🩺 Health-check 30 giây (chạy khi nghi ngờ có vấn đề)
+
+Mở **PowerShell**, paste cả block sau:
+
+```powershell
+Write-Host "`n=== VN OS Health Check ===" -ForegroundColor Cyan
+
+Write-Host "`n[1/5] Python version:" -ForegroundColor Yellow
+python --version
+
+Write-Host "`n[2/5] Package install location:" -ForegroundColor Yellow
+python -c "import json; from pathlib import Path; p = Path([d for d in __import__('site').getsitepackages() + [__import__('site').getusersitepackages()] if (Path(d) / 'vn_one_person_company-0.2.0.dist-info').exists()][0]) / 'vn_one_person_company-0.2.0.dist-info' / 'direct_url.json'; print(json.loads(p.read_text())['url'])"
+
+Write-Host "`n[3/5] Claude Desktop processes:" -ForegroundColor Yellow
+(Get-Process claude -ErrorAction SilentlyContinue | Measure-Object).Count
+
+Write-Host "`n[4/5] vn-os-mcp processes:" -ForegroundColor Yellow
+(Get-Process vn-os-mcp -ErrorAction SilentlyContinue | Measure-Object).Count
+
+Write-Host "`n[5/5] Vault .env file:" -ForegroundColor Yellow
+$envFile = Read-Host "  Nhập vault path (vd F:\vaults\Sao Việt)"
+if (Test-Path "$envFile\.env") {
+    Get-Content "$envFile\.env" | ForEach-Object { if ($_ -match "^DEEPSEEK|^TAVILY") { ($_ -split "=")[0] + "=" + (($_ -split "=")[1].Substring(0,[Math]::Min(8,($_ -split "=")[1].Length))) + "..." } }
+} else { Write-Host "  ❌ .env not found!" -ForegroundColor Red }
+```
+
+**Kết quả mong đợi:**
+- [1/5] Python 3.11+ hoặc 3.12+
+- [2/5] `file:///F:/.work/vn-one-person-company` (đường repo thực tế)
+- [3/5] 1-12 (Claude Desktop đang chạy)
+- [4/5] 1-3 (MCP đang chạy — nhiều process bình thường nếu mở nhiều session)
+- [5/5] `DEEPSEEK_API_KEY=sk-xxxxx...` (có key, không rỗng)
+
+Nếu mục nào sai → tìm "Lỗi" tương ứng dưới đây.
 
 ---
 
-**Có vấn đề trong Phần 1, 2 hoặc 3?** Mở issue tại: https://github.com/&lt;owner&gt;/vn-one-person-company/issues
+### Lỗi 1: Tool MCP timeout / không phản hồi
+
+**Triệu chứng:** Claude gọi `vn_meeting` nhưng > 5 phút không trả về.
+
+**Cách fix:**
+1. Kiểm tra bạn đang ở tab **"</> Code"** chưa? Nếu đang ở **Cowork** → switch sang Code.
+2. Mở Obsidian, vào `02-Tasks/<task_folder>/` xem file nào đã sinh:
+   - Có `04-meeting-r1-perspectives.md` nhưng chưa có `07-decision-report.md` → đang chạy meeting, đợi thêm.
+   - Đã có `07-decision-report.md` → meeting xong, bảo Claude "đã thấy decision report, tiếp `vn_approve`".
+3. Nếu thực sự treo → trong session Code gõ `/abort`, rồi retry stage.
+
+### Lỗi 2: `vn_status` báo `error: Brain dir not found`
+
+**Triệu chứng:** `{"error": "...00-Brain not found..."}`
+
+**Cách fix:**
+- Vault path sai → check spelling, đặc biệt dấu khoảng trắng (`"F:\vaults\Sao Việt"` phải có ngoặc kép).
+- Vault chưa onboard → chạy `vn_onboard` (Bước 10 Cách 1).
+
+### Lỗi 3: `tools_skipped` chứa `web_search / vn_law_search`
+
+**Triệu chứng:** vn_status báo 4 tools bị skip vì thiếu `TAVILY_API_KEY`.
+
+**Cách fix:**
+1. Đăng ký Tavily free tại https://app.tavily.com → Settings → API Keys → tạo key (dạng `tvly-xxxxx`).
+2. Mở `F:\vaults\<TênDN>\.env`, thêm dòng:
+   ```
+   TAVILY_API_KEY=tvly-xxxxxxxxxxx
+   ```
+3. Restart Claude Desktop (đóng hoàn toàn → mở lại).
+4. Test: `vn_status` → `tools_live` phải có 6 tools.
+
+> 💡 **Không có Tavily key vẫn dùng được** — chỉ là decision report không có research live (luật mới, đối thủ thực tế). Hệ thống vẫn dùng Brain + LLM knowledge để debate.
+
+### Lỗi 4: `Method not found` khi gọi vn_draft / vn_run / vn_meeting
+
+Có **2 nguyên nhân khác nhau** cho cùng error message:
+
+#### 4.A — MCP server chưa load tool
+
+**Triệu chứng:** Claude báo "I don't have access to vn_status tool" hoặc Method not found ở **mọi tool** vn_*.
+
+**Cách fix:**
+1. Check `claude_desktop_config.json` có entry `vn-business-os` không:
+   ```powershell
+   notepad "$env:APPDATA\Claude\claude_desktop_config.json"
+   ```
+2. Đường dẫn `vn-os-mcp.exe` đúng chưa: `F:\\.work\\vn-one-person-company\\.venv\\Scripts\\vn-os-mcp.exe` (escape dấu `\` thành `\\`).
+3. **Quit Claude Desktop ĐÚNG CÁCH** từ tray (xem Bước 8.3) — KHÔNG chỉ đóng cửa sổ.
+
+#### 4.B — Thiếu DEEPSEEK_API_KEY (LLM sampling unavailable)
+
+**Triệu chứng:** `vn_status` chạy OK, nhưng `vn_draft` / `vn_run` / `vn_meeting` báo `Method not found`.
+
+**Root cause:** Code fallback đến MCP sampling khi không có `DEEPSEEK_API_KEY` / `ANTHROPIC_API_KEY`. Nhưng Claude Code tab KHÔNG implement MCP sampling protocol → báo `Method not found`.
+
+**Cách fix:**
+1. Mở `F:\vaults\<TênDN>\.env`, đảm bảo có dòng:
+   ```
+   DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxx
+   ```
+2. **Verify key load đúng**: Trong Claude Code chat:
+   > Gọi vn_status với vault F:\vaults\<TênDN>
+   → Field `tools_live` phải có `industry_benchmark`, `tax_calculator`. Nếu thiếu cả 2 → `.env` chưa load.
+3. **Quit + restart Claude Desktop** từ tray (Bước 8.3) để MCP server pick up env vars mới.
+
+### Lỗi 4.5: Sửa code nhưng MCP không pick up
+
+**Triệu chứng:** Sửa file `.py` trong repo xong, restart Claude Desktop, gọi tool — vẫn dùng code cũ.
+
+**Root cause:** Process `vn-os-mcp.exe` cũ còn chạy ngầm (Claude Desktop khi "close" chỉ minimize tray).
+
+**Cách fix:**
+```powershell
+# 1. Kill mọi MCP process cũ
+Get-Process vn-os-mcp -ErrorAction SilentlyContinue | Stop-Process -Force
+
+# 2. Quit Claude Desktop từ tray (right-click icon → Quit)
+
+# 3. Verify
+Get-Process claude, vn-os-mcp -ErrorAction SilentlyContinue | Measure-Object | Select-Object -ExpandProperty Count
+# → phải là 0
+
+# 4. Mở lại Claude Desktop → click tab "</> Code"
+```
+
+### Lỗi 4.6: Sửa code không có hiệu lực vì install trỏ folder khác
+
+**Triệu chứng:** Sửa file trong `F:\.work\vn-one-person-company\` nhưng MCP server vẫn load code cũ từ folder khác (vd OneDrive copy).
+
+**Cách kiểm tra:**
+```powershell
+python -c "import json; from pathlib import Path; p = Path([d for d in __import__('site').getsitepackages() + [__import__('site').getusersitepackages()] if (Path(d) / 'vn_one_person_company-0.2.0.dist-info').exists()][0]) / 'vn_one_person_company-0.2.0.dist-info' / 'direct_url.json'; print(json.loads(p.read_text())['url'])"
+```
+
+Nếu output **không phải** `file:///F:/.work/vn-one-person-company` → đang load từ folder khác.
+
+**Cách fix:**
+```powershell
+# Gỡ install cũ
+pip uninstall vn-business-os vn-one-person-company -y
+
+# Kill MCP process (giữ file exe không bị lock)
+Get-Process vn-os-mcp -ErrorAction SilentlyContinue | Stop-Process -Force
+
+# Cài lại từ đúng folder
+cd "F:\.work\vn-one-person-company"
+pip install -e .
+
+# Quit + restart Claude Desktop từ tray
+```
+
+### Lỗi 5: DeepSeek lỗi `API key invalid`
+
+**Triệu chứng:** `vn_run` / `vn_draft` báo `Authentication failed`.
+
+**Cách fix:**
+1. Mở `F:\vaults\<TênDN>\.env`, kiểm tra `DEEPSEEK_API_KEY=sk-...` có đúng key không.
+2. Vào https://platform.deepseek.com → API Keys → kiểm tra key còn active không, có credit không.
+3. Sửa lại key → save .env → restart Claude Desktop.
+
+### Lỗi 6: Obsidian MCP `connection refused`
+
+**Triệu chứng:** `obsidian_list_files_in_vault` báo lỗi connection.
+
+**Cách fix:**
+1. Obsidian app phải đang chạy (mở vault).
+2. Plugin Local REST API phải Enabled (Settings → Community plugins).
+3. OBSIDIAN_API_KEY trong `claude_desktop_config.json` đúng chưa? Lấy lại từ Settings → Local REST API → API Key.
+
+### Lỗi 7: `pip install -e .` báo lỗi
+
+**Triệu chứng:** Bước 5 fail với `error: subprocess-exited-with-error`.
+
+**Cách fix:**
+1. Python version ≥ 3.11 chưa? `python --version` check.
+2. venv đã activate chưa? Prompt phải có `(.venv)` ở đầu.
+3. Nếu lỗi `Microsoft Visual C++ 14.0 required` → cài [VC++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
+
+---
+
+## 💡 PHẦN 5 — MẸO DÙNG TỐT NHẤT
+
+### Mẹo 1: Brain càng đầy đủ, decision càng chuẩn
+
+Mỗi câu trong Brain bạn fill → Claude/DeepSeek dùng để debate. Brain rỗng = AI "đoán" → output chung chung. Đầu tư 30 phút fill Brain kỹ = tiết kiệm hàng giờ sửa decision report sai sau này.
+
+### Mẹo 2: Update Brain mỗi tháng
+
+Kết thúc mỗi tháng, mở 8 file Brain, cập nhật:
+- `state.md` — doanh thu thực tế tháng vừa qua, vấn đề nóng mới
+- `budget.md` — chi thực tế vs ngân sách
+- `decisions-log.md` — append các quyết định lớn trong tháng
+
+Brain "sống" → mỗi task mới sẽ reflect tình hình DN hiện tại, không phải state lúc onboard.
+
+### Mẹo 3: Brief càng cụ thể, output càng tốt
+
+❌ Brief tệ: "Soạn JD nhân viên"
+✅ Brief tốt: "Soạn JD nhân viên pha chế cho Sao Việt, lương 8tr/tháng Q1 TPHCM, yêu cầu 6 tháng KN máy espresso, ca 8h x 6 ngày/tuần, BHXH theo Luật LĐ 2019, ưu tiên ứng viên biết latte art"
+
+Brief tốt = giảm số câu clarification = output ra đúng ý ngay lần đầu.
+
+### Mẹo 4: Dùng `vn_draft` cho doc đơn giản, full pipeline cho quyết định lớn
+
+| Task | Tool nên dùng |
+|---|---|
+| HĐLĐ, JD, nội quy, phiếu thu, thư mời, SOP đơn giản | `vn_draft` |
+| Phân tích chiến lược, mở chi nhánh, ngân sách lớn, rebrand | Full pipeline (`vn_run → meeting → approve → execute`) |
+| Quyết định pháp lý cao (hợp đồng đối tác lớn, IPO docs) | Full pipeline + tự thuê luật sư review |
+
+### Mẹo 5: Cuối session, archive task cũ
+
+Sau 30 ngày, các task trong `02-Tasks/` cũ → move sang `99-Archive/<năm-tháng>/`:
+
+> "Move các task trong 02-Tasks/ tạo trước ngày 2026-04-01 sang 99-Archive/2026-Q1/"
+
+Claude tự gọi `obsidian_*` chuyển file. Giữ `02-Tasks/` gọn → load vault nhanh hơn.
+
+### Mẹo 6: Backup vault định kỳ
+
+Vault là toàn bộ "bộ não" DN bạn. Mất = mất hết quyết định + tài liệu lịch sử.
+
+**Cách 1 — Git private repo (khuyến nghị):**
+```powershell
+cd "F:\vaults\Sao Việt"
+git init
+git add .
+git commit -m "init vault"
+# Tạo private repo trên GitHub → push
+git remote add origin https://github.com/<bạn>/sao-viet-vault.git
+git push -u origin main
+```
+Mỗi tuần: `git add . && git commit -m "weekly backup" && git push`.
+
+**Cách 2 — Copy thủ công:**
+Định kỳ copy folder `F:\vaults\Sao Việt` sang OneDrive/Google Drive.
+
+---
+
+### Mẹo 7: Workflow khi update repo / sửa code
+
+Khi bạn pull bản mới của repo, hoặc tự sửa code Python:
+
+```powershell
+# 1. Pull bản mới (nếu dùng git)
+cd "F:\.work\vn-one-person-company"
+git pull
+
+# 2. Kill MCP process cũ
+Get-Process vn-os-mcp -ErrorAction SilentlyContinue | Stop-Process -Force
+
+# 3. (Nếu pyproject.toml đổi) reinstall:
+pip install -e .
+
+# 4. Quit Claude Desktop từ tray (right-click icon → Quit)
+
+# 5. Mở lại Claude Desktop → tab Code → test:
+#    "Chạy vn_status với vault F:\vaults\<TênDN>"
+```
+
+> ⚠️ **Bỏ bước nào cũng có thể gây "code không có hiệu lực".** Đặc biệt bước 2 (kill MCP) và bước 4 (Quit tray) — đây là 2 lỗi học viên hay quên.
+
+---
+
+## 🤝 PHẦN 6 — DÀNH CHO DEV (advanced)
+
+### Chạy MCP server ở chế độ debug
+
+```powershell
+cd "F:\.work\vn-one-person-company"
+.\.venv\Scripts\Activate.ps1
+$env:MCP_DEBUG = "1"
+vn-os-mcp
+```
+
+Logs in trực tiếp ra console → debug được tool calls.
+
+### Override config qua `.vncoderc`
+
+File `$HOME\.vncoderc` (đã tạo ở Bước 7.2) chỉnh:
+
+```yaml
+llm:
+  primary: deepseek-v4-pro          # hoặc claude-sonnet-4-6
+  secondary: deepseek-v4-flash
+  max_retries: 3
+  max_tokens_per_task: 100000
+
+meeting:
+  max_debate_rounds: 1     # 1 = nhanh, 2 = kỹ hơn
+  total_max: 3
+
+translator_mode: final_only   # off | final_only | all_intermediate
+```
+
+### Test pack mới
+
+Tạo `packs/<your-pack>/` theo cấu trúc `packs/fnb/`. Test:
+```powershell
+pytest tests/ -k "your_pack" -v
+```
+
+### Contribute
+
+PR tại https://github.com/&lt;owner&gt;/vn-one-person-company. Đặc biệt cần:
+- Pack mới: Real Estate, Healthcare, Education, Beauty
+- Translation: thêm thuật ngữ VN→EN trong glossary
+- Test coverage: real-LLM E2E
+
+---
+
+**Có vấn đề trong Phần 1-6?** Mở issue tại: https://github.com/&lt;owner&gt;/vn-one-person-company/issues

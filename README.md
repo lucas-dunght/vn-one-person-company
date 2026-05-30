@@ -94,7 +94,8 @@ Chọn 1 trong 2 client tuỳ bạn dùng:
 
 ```powershell
 vn-os install-mcp
-# Restart Claude Desktop
+# Restart Claude Desktop hoàn toàn (Quit từ taskbar → mở lại)
+# Click tab "</> Code" ở góc trên bên phải
 ```
 
 **B) Claude Code** (CLI / terminal)
