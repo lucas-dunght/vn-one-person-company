@@ -2,7 +2,7 @@
 
 > **Hệ điều hành AI cho Công ty 1 Người Việt Nam.**
 > Bạn là CEO duy nhất — 12+ phòng ban AI agents họp bàn debate, ra quyết định, sinh báo cáo + tài liệu `.docx/.xlsx` tuân thủ luật VN.
-> Chạy qua Claude Desktop subscription, **không cần Anthropic API key**.
+> Chạy qua **Claude Desktop hoặc Claude Code** subscription, **không cần Anthropic API key**.
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
@@ -19,7 +19,7 @@
 - ⚖️ Quyết định **dựa trên debate đa chiều** thay vì chỉ 1 góc nhìn của mình
 - 📄 Sinh tài liệu **tuân thủ luật VN** (Luật DN 2020, BLLĐ 2019, NĐ 15/2018 VSATTP, NĐ 13/2023 PDPA, ...)
 - 🧠 Mọi quyết định + tài liệu **lưu Obsidian + Git** — single source of truth, không lạc giữa Notion/Drive/Excel
-- 💰 **Không trả $20-100/tháng cho 5 SaaS** (Notion AI, ChatGPT, Claude API, ...). Plugin chạy qua Claude Desktop subscription duy nhất.
+- 💰 **Không trả $20-100/tháng cho 5 SaaS** (Notion AI, ChatGPT, Claude API, ...). Plugin chạy qua **Claude Desktop hoặc Claude Code** subscription duy nhất.
 
 ### Tình huống thực tế
 
@@ -63,7 +63,7 @@
 - **Engine debate**: Python 3.11+ + LangGraph (adapt từ TradingAgents, rename neutral)
 - **Knowledge base**: 192 template tiếng Việt + 12 phòng ban core + 3 industry pack
 - **Storage**: Obsidian Markdown + Git private (mỗi DN 1 vault)
-- **LLM**: MCP sampling qua Claude Desktop (subscription) — KHÔNG cần API key Anthropic
+- **LLM**: MCP sampling qua Claude Desktop / Claude Code (subscription) — KHÔNG cần API key Anthropic
 - **Search**: Tavily (free tier 1000 req/tháng) cho luật/đối thủ/web
 
 ---
@@ -86,16 +86,35 @@ python -m venv .venv
 pip install -e .
 ```
 
-### 2. Cài MCP server vào Claude Desktop
+### 2. Cài MCP server
+
+Chọn 1 trong 2 client tuỳ bạn dùng:
+
+**A) Claude Desktop** (GUI app)
 
 ```powershell
 vn-os install-mcp
 # Restart Claude Desktop
 ```
 
+**B) Claude Code** (CLI / terminal)
+
+```bash
+bash adapters/claude-code/install.sh
+# Tự động: cài skill `vn-business-os` + register MCP vào ~/.claude.json
+```
+
+Hoặc thủ công:
+```powershell
+vn-os install-mcp --target claude-code
+```
+
+> 💡 Windows dùng Claude Code: chạy `install.sh` qua Git Bash hoặc WSL. Hoặc dùng lệnh thủ công ở trên.
+> Chi tiết xem [`adapters/claude-code/README.md`](adapters/claude-code/README.md).
+
 ### 3. Tạo vault cho công ty
 
-Trong Claude Desktop chat:
+Trong Claude Desktop / Claude Code chat:
 ```
 Setup vault cho công ty XYZ tại đường dẫn F:/work/xyz-vault.
 Cài pack F&B. TAVILY_API_KEY của tôi: tvly-xxx (lấy free tại tavily.com).
@@ -106,8 +125,13 @@ Claude tự động gọi MCP tool `vn_onboard` để tạo vault scaffold + cà
 ### 4. Re-install MCP với env injected
 
 ```powershell
+# Claude Desktop
 vn-os install-mcp --vault "F:/work/xyz-vault"
 # Restart Claude Desktop lần nữa
+
+# Claude Code
+vn-os install-mcp --vault "F:/work/xyz-vault" --target claude-code
+# Restart Claude Code session
 ```
 
 ### 5. Điền Brain (1 lần)
@@ -121,7 +145,7 @@ CEO mở `<vault>/00-Brain/` trong Obsidian, điền:
 
 ### 6. Chạy task đầu tiên
 
-Trong Claude Desktop chat:
+Trong Claude Desktop / Claude Code chat:
 ```
 Tôi muốn làm chiến dịch quảng cáo Tết cho sản phẩm A.
 Tham khảo budget hiện tại + tham vấn pháp lý.
