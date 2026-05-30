@@ -36,19 +36,37 @@ from core.upgrade import upgrade_vault
 mcp = FastMCP("vn-business-os")
 
 
+def _pick_llm(ctx: Context):
+    """Chọn LLM provider theo env vars.
+
+    Ưu tiên DeepSeek > Anthropic API > MCP sampling.
+    - DEEPSEEK_API_KEY có → DeepSeekProvider (rẻ ~10x, phù hợp DN nhỏ VN)
+    - ANTHROPIC_API_KEY có → ClaudeProvider
+    - Cả 2 đều không → MCPSamplingProvider (subscription qua Claude Desktop)
+
+    Lý do fallback: Claude Code tab hiện KHÔNG support MCP sampling →
+    create_message báo 'Method not found'. DeepSeek/Anthropic API là path
+    chính cho mọi tab. MCP sampling chỉ là fallback cuối khi user không có key.
+    """
+    if os.getenv("DEEPSEEK_API_KEY"):
+        from core.llm.providers import DeepSeekProvider
+        return DeepSeekProvider()
+    if os.getenv("ANTHROPIC_API_KEY"):
+        from core.llm.providers import ClaudeProvider
+        return ClaudeProvider()
+    return MCPSamplingProvider(ctx.session)
+
+
 def _make_fc(vault_root: str, ctx: Context) -> FlowController:
     """Build FlowController bound to current MCP request session.
 
-    `ctx.session` is the ServerSession exposing async `create_message(...)` —
-    MCPSamplingProvider routes complete() through it (sampling protocol).
-
-    Cũng load vault/.env (TAVILY_API_KEY, ...) vào os.environ để tools tìm thấy.
+    Load vault/.env (DEEPSEEK_API_KEY, TAVILY_API_KEY, ...) vào os.environ
+    trước khi pick LLM provider (priority: DeepSeek > Anthropic > MCP sampling).
     """
     from core.utils.config import apply_vault_env_to_os
     apply_vault_env_to_os(Path(vault_root))
 
-    session = ctx.session
-    llm = MCPSamplingProvider(session)
+    llm = _pick_llm(ctx)
     return FlowController(vault_root=Path(vault_root), llm=llm)
 
 
@@ -61,8 +79,8 @@ def _vault_root_from_task(task_folder: Path) -> Path:
 async def vn_run(brief: str, vault: str, ctx: Context) -> dict:
     """Stage 1: brief → router → gap → clarification (PAUSE).
 
-    ⏱️ Duration: 20-50s (2-3 LLM calls). Borderline với Cowork 60s timeout.
-    Nếu fail qua chat → chạy qua PowerShell `vn-os run --vault <path> --brief "..."`.
+    ⏱️ Duration: 20-50s (2-3 LLM calls). Chạy trực tiếp trong Claude Code tab.
+    (Cowork tab có timeout 60s — chuyển sang Code tab nếu fail.)
 
     Returns task_folder path + stage. If stage == PAUSE_CLARIFICATION,
     CEO needs to answer questions in 03-clarification.md before vn_resume.
@@ -100,10 +118,8 @@ def vn_meeting(
 ) -> dict:
     """Stage 3: research + meeting (Pro/Con + Perspective) + synthesizer.
 
-    ⚠️ TIMEOUT WARNING: Tool này chạy 7+ LLM calls tuần tự (60-180s).
-    KHÔNG dùng được qua Cowork/Claude Desktop (60s timeout hard cap).
-    Khuyến nghị: Chạy qua PowerShell `vn-os meeting <task_folder>` hoặc
-    Claude Code CLI (set MCP_TOOL_TIMEOUT=300000).
+    ⏱️ Duration: 60-180s (7+ LLM calls tuần tự). Chạy trong Claude Code tab
+    (timeout 10 phút). KHÔNG chạy trong Cowork tab (60s hard cap — sẽ fail).
 
     Auto-extracts departments from 01-routing.md if not provided.
     Output: 07-decision-report.md (Stop 1).
@@ -171,11 +187,12 @@ async def vn_draft(
 ) -> dict:
     """Fast path: soạn 1 tài liệu boilerplate qua 1 LLM call (không debate).
 
-    ⏱️ Duration: 10-30s (1 LLM call). OK qua Cowork timeout 60s
-    cho doc ngắn (HD, JD, SOP). Doc dài có thể borderline.
+    ⏱️ Duration: 10-30s (1 LLM call). Chạy được ở cả Code tab + Cowork tab
+    (doc ngắn). Doc dài (HĐLĐ phức tạp) nên chạy Code tab để chắc chắn.
 
     Dùng cho: HĐLĐ, JD, nội quy, phiếu thu, SOP đơn giản, thư mời họp...
-    KHÔNG dùng cho: quyết định chiến lược, doc rủi ro pháp lý cao.
+    KHÔNG dùng cho: quyết định chiến lược, doc rủi ro pháp lý cao
+    (case đó dùng vn_run → vn_meeting → vn_approve → vn_execute).
 
     Trade-off: nhanh (~10-30s thay vì 1-3 phút của vn_run+vn_meeting)
     nhưng KHÔNG qua multi-perspective review.
@@ -193,7 +210,7 @@ async def vn_draft(
     vault_path = Path(vault)
     apply_vault_env_to_os(vault_path)
 
-    llm = MCPSamplingProvider(ctx.session)
+    llm = _pick_llm(ctx)
     return await adraft_document(
         brief=brief,
         vault_root=vault_path,
@@ -206,7 +223,7 @@ async def vn_draft(
 def vn_status(vault: str = "") -> dict:
     """Inspect vault — Brain summary + active depts + tasks + tool availability.
 
-    ⚡ Duration: <1s (no LLM call). Luôn OK qua Cowork.
+    ⚡ Duration: <1s (no LLM call). Chạy được ở mọi tab (Code / Cowork / Chat).
 
     Vault resolution: nếu không truyền, đọc từ env var VN_OS_DEFAULT_VAULT
     (set trên Windows qua: setx VN_OS_DEFAULT_VAULT "F:\\vaults\\<TênDN>").
@@ -224,7 +241,7 @@ def vn_status(vault: str = "") -> dict:
                     "Không tìm thấy vault path. Cách fix: "
                     "(1) Truyền tham số vault='F:\\vaults\\<TênDN>', HOẶC "
                     "(2) Set env var: setx VN_OS_DEFAULT_VAULT 'F:\\vaults\\<TênDN>' "
-                    "rồi restart Claude Desktop."
+                    "rồi restart Claude Desktop (đóng hoàn toàn rồi mở lại)."
                 ),
             }
     vault_path = Path(vault)
@@ -273,37 +290,38 @@ def vn_status(vault: str = "") -> dict:
     except Exception:  # noqa: BLE001
         pass
 
-    workflow_rules = """🚨 QUY TẮC PHÂN TASK BẮT BUỘC (Claude tự áp dụng):
+    workflow_rules = """📋 HƯỚNG DẪN VẬN HÀNH (Claude đọc trước khi xử lý task):
 
-✅ TASK NHẸ — Bạn (Claude) LÀM TRỰC TIẾP trong chat (gọi MCP tools):
-   - vn_status (xem trạng thái vault) — luôn OK
-   - obsidian_* (đọc/sửa file vault) — luôn OK
-   - Tư vấn dựa trên Brain context (KHÔNG gọi vn_run/vn_meeting/vn_draft)
+🎯 Môi trường khuyến nghị: Claude Code tab (timeout 10 phút, gọi được mọi tool MCP).
 
-❌ TASK NẶNG — Bạn KHÔNG ĐƯỢC gọi tool, chỉ sinh command PowerShell cho user paste:
-   - vn_run — 20-50s, borderline với Cowork 60s timeout
-   - vn_meeting — 7+ LLM calls (60-180s), TIMEOUT chắc chắn
-   - vn_approve — có LLM call, TIMEOUT
-   - vn_draft — DeepSeek thực tế > 60s, TIMEOUT
-   - vn_resume — có LLM call, TIMEOUT
+✅ Mọi tool MCP đều gọi trực tiếp được:
+   - vn_status, obsidian_* — instant (<1s)
+   - vn_draft — 10-30s (1 LLM call, soạn boilerplate)
+   - vn_run — 20-50s (router + clarification)
+   - vn_resume — <10s (resume sau khi CEO trả lời clarification)
+   - vn_meeting — 60-180s (debate đa phòng, 7+ LLM calls)
+   - vn_approve — 10-30s
+   - vn_execute — 10-30s (render docx/xlsx)
 
-Khi user yêu cầu task NẶNG (soạn doc, debate, brainstorm, phân tích chiến lược):
-   1. KHÔNG gọi tool MCP — chỉ sinh command PowerShell
-   2. Format command sẵn copy-paste với cú pháp NGẮN:
-      cd "<vault_path>"
-      $vnos = "<repo>\\.venv\\Scripts\\vn-os.exe"
-      & $vnos run "<brief content>"           # KHÔNG cần --vault --brief
-      & $vnos meeting "<task_folder>"
-      & $vnos approve "<task_folder>"
-      & $vnos execute "<task_folder>"
-      
-      ⚠️ ĐỪNG dùng cú pháp dài kiểu: & $vnos run --vault . --brief "..."
-      → CLI chấp nhận cả 2 nhưng cú pháp ngắn dễ đọc + ít sai hơn.
-   3. Báo thời gian ước tính
-   4. Hướng dẫn user vào Obsidian xem kết quả tại 02-Tasks/<folder>/
-   5. Đợi user báo "xong" → đọc file qua obsidian_get_file_contents → tóm tắt
+⚠️ Lưu ý theo tab:
+   - 🟢 Claude Code tab: gọi mọi tool trực tiếp, không cần lo timeout
+   - 🟡 Cowork tab: chỉ chạy được vn_status / vn_draft / obsidian_* (60s cap)
+     → Task nặng (vn_run, vn_meeting) sẽ fail. Khi user dùng Cowork mà cần task nặng,
+        hướng dẫn switch sang Code tab (click "</> Code" góc trên Claude Desktop).
 
-Tham khảo chi tiết: F:\\.work\\vn-one-person-company\\README-USER.md (Phần 3)
+🔄 Workflow chuẩn cho 1 task ra deliverable .docx:
+   1. vn_draft(brief, vault, doc_type)  — fast path cho HĐLĐ/JD/SOP đơn giản
+   HOẶC pipeline đầy đủ cho quyết định chiến lược:
+   1. vn_run(brief, vault) → trả về task_folder + có thể PAUSE_CLARIFICATION
+   2. (nếu PAUSE) CEO trả lời 03-clarification.md → vn_resume(task_folder)
+   3. vn_meeting(task_folder) → 07-decision-report.md (Stop 1 — CEO duyệt)
+   4. vn_approve(task_folder) → 08-execution-plan.md (Stop 2 — CEO duyệt)
+   5. vn_execute(task_folder) → file .docx/.xlsx trong 03-Outputs/
+
+Sau mỗi bước, báo task_folder + tóm tắt file mới. Đợi CEO confirm ở Stop 1 / Stop 2
+trước khi chạy stage tiếp.
+
+Tham khảo chi tiết: README-USER.md trong repo (Phần 3 — Sử dụng hàng ngày).
 """
 
     return {
